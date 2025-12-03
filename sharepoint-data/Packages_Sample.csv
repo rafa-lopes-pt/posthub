@@ -1,0 +1,5 @@
+Title,TrackingNumber,Sender,Recipient,Priority,Status,CurrentLocation,DestinationLocation,PackageDetails,Notes
+Important Documents,POSTHUB-20251203-00001,john.smith@company.com,sarah.johnson@company.com,Urgent,Sent,Mailroom A,Room 102,Large envelope - 9x12 inches,Please deliver by end of day
+New Laptop,POSTHUB-20251203-00002,emily.davis@company.com,michael.chen@company.com,Standard,Sent,Mailroom B,Room 201,Box - 18x12x8 inches - Dell Laptop,Fragile - Handle with care
+Office Supplies,POSTHUB-20251203-00003,lisa.anderson@company.com,david.wilson@company.com,Low,Sent,Mailroom A,Conference Room A,Medium box - Pens and notebooks,Standard office supplies
+Marketing Materials,POSTHUB-20251203-00004,robert.martinez@company.com,jennifer.taylor@company.com,Standard,Sent,North Mailroom,Room 201,Large box - Brochures and flyers,Inter-campus delivery

@@ -1,0 +1,18 @@
+Title,Campus,Building,RoomArea,LocationType,ParentLocation,IsActive,SortOrder
+Main Campus,Main Campus,,,Campus,,Yes,1
+North Campus,North Campus,,,Campus,,Yes,2
+Building A,Main Campus,Building A,,Building,Main Campus,Yes,10
+Building B,Main Campus,Building B,,Building,Main Campus,Yes,11
+Building C,Main Campus,Building C,,Building,Main Campus,Yes,12
+North Building 1,North Campus,North Building 1,,Building,North Campus,Yes,20
+Mailroom A,Main Campus,Building A,Mailroom A,Mailroom,Building A,Yes,100
+Mailroom B,Main Campus,Building B,Mailroom B,Mailroom,Building B,Yes,101
+Room 101,Main Campus,Building A,Room 101,Office,Building A,Yes,200
+Room 102,Main Campus,Building A,Room 102,Office,Building A,Yes,201
+Room 103,Main Campus,Building A,Room 103,Office,Building A,Yes,202
+Room 201,Main Campus,Building B,Room 201,Office,Building B,Yes,210
+Room 202,Main Campus,Building B,Room 202,Office,Building B,Yes,211
+Conference Room A,Main Campus,Building A,Conference Room A,Office,Building A,Yes,250
+Storage Room 1,Main Campus,Building C,Storage Room 1,Storage,Building C,Yes,300
+North Mailroom,North Campus,North Building 1,North Mailroom,Mailroom,North Building 1,Yes,400
+North Office 100,North Campus,North Building 1,Office 100,Office,North Building 1,Yes,401

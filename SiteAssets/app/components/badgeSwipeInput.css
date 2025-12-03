@@ -1,0 +1,357 @@
+/**
+ * Badge Swipe Input Component Styles
+ * BEM naming convention with nofbiz__ prefix
+ */
+
+/* Container */
+.nofbiz__badge-swipe-input {
+  width: 100%;
+  max-width: 600px;
+  margin: 1rem 0;
+}
+
+/* Instruction Section */
+.nofbiz__badge-instruction {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.nofbiz__badge-icon {
+  font-size: 32px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.nofbiz__badge-instruction-text {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Input Wrapper */
+.nofbiz__badge-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.nofbiz__badge-input-wrapper:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+/* Input Field */
+.nofbiz__badge-input {
+  flex: 1;
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #212529;
+  background: #f8f9fa;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+.nofbiz__badge-input::placeholder {
+  color: #adb5bd;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.nofbiz__badge-input:focus {
+  background: #ffffff;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+}
+
+.nofbiz__badge-input:disabled {
+  background: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Status Indicator */
+.nofbiz__badge-status {
+  min-width: 120px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nofbiz__status-ready {
+  color: #6c757d;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nofbiz__status-ready::before {
+  content: '●';
+  font-size: 12px;
+  color: #28a745;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.nofbiz__status-processing {
+  color: #0070d2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.nofbiz__status-processing::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #e9ecef;
+  border-top-color: #0070d2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.nofbiz__status-success {
+  color: #28a745;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: successPop 0.4s ease;
+}
+
+.nofbiz__status-error {
+  color: #dc3545;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: errorShake 0.4s ease;
+}
+
+.nofbiz__status-disabled {
+  color: #adb5bd;
+  font-style: italic;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes errorShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+/* Focus Ring Enhancement */
+.nofbiz__badge-input:focus-visible {
+  outline: 3px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Hover States */
+.nofbiz__badge-input:hover:not(:disabled) {
+  border-color: #adb5bd;
+}
+
+/* Alternative Style: Compact Mode */
+.nofbiz__badge-swipe-input--compact .nofbiz__badge-instruction {
+  padding: 12px 16px;
+}
+
+.nofbiz__badge-swipe-input--compact .nofbiz__badge-icon {
+  font-size: 24px;
+}
+
+.nofbiz__badge-swipe-input--compact .nofbiz__badge-instruction-text {
+  font-size: 14px;
+}
+
+.nofbiz__badge-swipe-input--compact .nofbiz__badge-input-wrapper {
+  padding: 16px;
+}
+
+.nofbiz__badge-swipe-input--compact .nofbiz__badge-input {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+/* Alternative Style: Inline Mode (no instruction) */
+.nofbiz__badge-swipe-input--inline .nofbiz__badge-input-wrapper {
+  border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .nofbiz__badge-swipe-input {
+    max-width: 100%;
+  }
+
+  .nofbiz__badge-instruction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .nofbiz__badge-icon {
+    font-size: 24px;
+  }
+
+  .nofbiz__badge-instruction-text {
+    font-size: 14px;
+  }
+
+  .nofbiz__badge-input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .nofbiz__badge-input {
+    width: 100%;
+    font-size: 15px;
+    padding: 12px 16px;
+  }
+
+  .nofbiz__badge-status {
+    width: 100%;
+    text-align: left;
+    padding-top: 8px;
+    border-top: 1px solid #e9ecef;
+  }
+}
+
+@media (max-width: 480px) {
+  .nofbiz__badge-instruction {
+    padding: 10px 12px;
+  }
+
+  .nofbiz__badge-icon {
+    font-size: 20px;
+  }
+
+  .nofbiz__badge-instruction-text {
+    font-size: 13px;
+  }
+
+  .nofbiz__badge-input-wrapper {
+    padding: 12px;
+  }
+
+  .nofbiz__badge-input {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .nofbiz__badge-status {
+    font-size: 13px;
+  }
+}
+
+/* Accessibility */
+.nofbiz__badge-input:focus-visible {
+  outline: 3px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .nofbiz__badge-instruction {
+    background: #0070d2;
+    border: 2px solid #000000;
+  }
+
+  .nofbiz__badge-input-wrapper {
+    border: 3px solid #000000;
+  }
+
+  .nofbiz__badge-input {
+    border: 2px solid #000000;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .nofbiz__badge-input,
+  .nofbiz__badge-input-wrapper,
+  .nofbiz__status-processing::before {
+    animation: none;
+    transition: none;
+  }
+
+  .nofbiz__status-ready::before {
+    animation: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .nofbiz__badge-swipe-input {
+    display: none;
+  }
+}
