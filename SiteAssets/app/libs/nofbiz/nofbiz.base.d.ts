@@ -1117,6 +1117,10 @@ declare function httpGETRequest(url: string, options?: RequestOptions): unknown;
 declare function httpPOSTRequest(url: string, options?: RequestOptions): unknown;
 declare function httpDELETERequest(url: string, options?: RequestOptions): unknown;
 
+interface CurrentUserOptions {
+    bruteForceAccountNameClientImplementation?: (_str: string, _tryCount: number) => string;
+    userUIDParserClientImplementation?: (_str: string) => string;
+}
 declare class CurrentUser {
     #private;
     protected _UID: string;
@@ -1129,7 +1133,9 @@ declare class CurrentUser {
     protected _Peers: string[];
     protected _SPGroupId: number;
     protected _SPGroupTitle: string;
-    constructor(accountName?: string);
+    protected _bruteForceAccountNameClientImplementation: CurrentUserOptions['bruteForceAccountNameClientImplementation'];
+    protected _userUIDParserClientImplementation: CurrentUserOptions['userUIDParserClientImplementation'];
+    constructor(accountName?: string, options?: CurrentUserOptions);
     /**
      * This should only be defined in the client environment, due to security compliance
      */

@@ -13,7 +13,6 @@ This comprehensive guide will walk you through setting up all SharePoint lists, 
    - [2.1 Locations List](#21-locations-list)
    - [2.2 Employees List (Update Existing)](#22-employees-list-update-existing)
    - [2.3 Packages List](#23-packages-list)
-   - [2.4 PackageHistory List](#24-packagehistory-list)
 3. [Part 3: Importing Sample Data](#part-3-importing-sample-data)
 4. [Part 4: Verification Checklist](#part-4-verification-checklist)
 5. [Troubleshooting](#troubleshooting)
@@ -108,7 +107,8 @@ You'll create 4 SharePoint lists. **Create them in this order** (due to lookup d
 1. **Locations** (first - no dependencies)
 2. **Employees** (second - needs Locations)
 3. **Packages** (third - needs Locations and Employees)
-4. **PackageHistory** (fourth - needs Packages and Locations)
+
+**Note**: PostHub uses an embedded Timeline field in the Packages list (JSON array) instead of a separate PackageHistory list for better performance and simpler queries.
 
 ---
 
@@ -359,6 +359,13 @@ Click **OK**
 
 Click **OK**
 
+⚠️ **CRITICAL**: While not technically required by SharePoint, **every employee MUST have an OfficeLocation assigned** for the PostHub application to function properly. This location is used for:
+- Initial package creation (sender's office location)
+- Facilities staff operations (current location for status updates)
+- Complete audit trail tracking
+
+Without OfficeLocation, users will encounter errors when creating packages or updating package status.
+
 ---
 
 #### Column 3: Manager
@@ -557,7 +564,33 @@ Click **OK**
 
 ---
 
-#### Column 6: CurrentLocation
+#### Column 6: Timeline
+
+| Setting | Value |
+|---------|-------|
+| **Column name** | `Timeline` |
+| **Type** | Multiple lines of text |
+| **Description** | JSON array of status change history |
+| **Require information** | No |
+| **Number of lines** | 10 |
+| **Type of text** | Plain text |
+| **Append Changes to Existing Text** | No |
+
+Click **OK**
+
+💡 **Important**: This field stores a JSON array tracking all status changes:
+```json
+[
+  {"status":"Sent","date":"2025-12-03T10:00:00Z","changedBy":"user@company.com","notes":"Package created"},
+  {"status":"Received","date":"2025-12-03T14:30:00Z","changedBy":"staff@company.com","location":"Mailroom A","notes":"Label printed"}
+]
+```
+
+This eliminates the need for a separate PackageHistory list and improves query performance.
+
+---
+
+#### Column 7: CurrentLocation
 
 | Setting | Value |
 |---------|-------|
@@ -660,6 +693,7 @@ Click **OK**
 - [ ] Recipient column (person, required, indexed)
 - [ ] Priority column (text)
 - [ ] Status column (text, required, indexed)
+- [ ] Timeline column (multi-line text, JSON array for audit trail)
 - [ ] CurrentLocation column (lookup to Locations)
 - [ ] DestinationLocation column (lookup to Locations)
 - [ ] PackageDetails column (multi-line text)
@@ -668,184 +702,7 @@ Click **OK**
 - [ ] Modified column (auto, default)
 - [ ] Indexed columns: TrackingNumber, Status, Sender, Recipient
 
-**Total Columns**: 12 (including Title, Created, Modified)
-
----
-
-## 2.4 PackageHistory List
-
-The PackageHistory list provides an audit trail for all package status changes.
-
-### Step 2.4.1: Create the List
-
-1. Navigate to your SharePoint site
-2. Click **Settings** gear → **Add an app**
-3. Click **Custom List**
-4. **Name**: `PackageHistory`
-5. Click **Create**
-
-### Step 2.4.2: Add Columns
-
-You'll add 8 custom columns.
-
----
-
-#### Column 1: PackageID
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `PackageID` |
-| **Type** | Lookup |
-| **Description** | Reference to the package |
-| **Require information** | Yes |
-| **Get information from** | Packages |
-| **In this column** | Title |
-| **Add a column to show each of these additional fields** | ☑ TrackingNumber |
-| **Allow multiple values** | No |
-
-Click **OK**
-
-💡 **Tip**: Also select TrackingNumber as an additional field for easy reference.
-
----
-
-#### Column 2: PreviousStatus
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `PreviousStatus` |
-| **Type** | Single line of text |
-| **Description** | Previous status before this change |
-| **Require information** | No |
-| **Maximum characters** | 50 |
-
-Click **OK**
-
----
-
-#### Column 3: NewStatus
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `NewStatus` |
-| **Type** | Single line of text |
-| **Description** | New status after this change |
-| **Require information** | Yes |
-| **Maximum characters** | 50 |
-
-Click **OK**
-
----
-
-#### Column 4: Location
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Location` |
-| **Type** | Lookup |
-| **Description** | Location where status change occurred |
-| **Require information** | No |
-| **Get information from** | Locations |
-| **In this column** | Title |
-| **Allow multiple values** | No |
-
-Click **OK**
-
----
-
-#### Column 5: ChangedBy
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `ChangedBy` |
-| **Type** | Person or Group |
-| **Description** | User who made the status change |
-| **Require information** | Yes |
-| **Allow multiple selections** | No |
-| **Allow selection of** | People Only |
-| **Choose from** | All Users |
-
-Click **OK**
-
----
-
-#### Column 6: Timestamp
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Timestamp` |
-| **Type** | Date and Time |
-| **Description** | When the status change occurred |
-| **Require information** | Yes |
-| **Date and Time Format** | Date & Time |
-| **Default value** | (Today) |
-
-Click **OK**
-
----
-
-#### Column 7: Notes
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Notes` |
-| **Type** | Multiple lines of text |
-| **Description** | Additional context for the status change |
-| **Require information** | No |
-| **Number of lines** | 4 |
-| **Type of text** | Plain text |
-
-Click **OK**
-
----
-
-#### Column 8: ScannedBarcode
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `ScannedBarcode` |
-| **Type** | Single line of text |
-| **Description** | Barcode value that triggered this status change |
-| **Require information** | No |
-| **Maximum characters** | 50 |
-
-Click **OK**
-
----
-
-### Step 2.4.3: Create Indexed Columns
-
-#### Index 1: PackageID
-
-1. Go to **List Settings**
-2. Under **Columns**, click **Indexed columns**
-3. Click **Create a new index**
-4. **Primary Column**: Select `PackageID`
-5. **Secondary Column**: None
-6. Click **Create**
-
-#### Index 2: Timestamp
-
-1. Click **Create a new index**
-2. **Primary Column**: Select `Timestamp`
-3. **Secondary Column**: None
-4. Click **Create**
-
-### Step 2.4.4: Verify PackageHistory List
-
-✅ **Checklist**:
-- [ ] Title column (default - Status Change description)
-- [ ] PackageID column (lookup to Packages, required, indexed)
-- [ ] PreviousStatus column (text)
-- [ ] NewStatus column (text, required)
-- [ ] Location column (lookup to Locations)
-- [ ] ChangedBy column (person, required)
-- [ ] Timestamp column (date/time, required, indexed)
-- [ ] Notes column (multi-line text)
-- [ ] ScannedBarcode column (text)
-- [ ] Indexed columns: PackageID, Timestamp
-
-**Total Columns**: 9 (including Title)
+**Total Columns**: 13 (including Title, Created, Modified)
 
 ---
 

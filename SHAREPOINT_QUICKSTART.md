@@ -54,7 +54,7 @@ This condensed checklist provides a quick reference for setting up SharePoint fo
 
 ### Add New Columns (6 total)
 - [ ] BadgeID (text, required, unique) ⚠️ CRITICAL
-- [ ] OfficeLocation (lookup to Locations)
+- [ ] OfficeLocation (lookup to Locations) ⚠️ CRITICAL - Required for all employees
 - [ ] Manager (person)
 - [ ] Building (text)
 - [ ] Campus (text)
@@ -67,6 +67,7 @@ This condensed checklist provides a quick reference for setting up SharePoint fo
 ### Add Sample Data
 - [ ] Import data from `sharepoint-data/Employees_Sample.csv` (10 employees)
 - [ ] Verify each employee has unique BadgeID
+- [ ] **CRITICAL:** Verify each employee has OfficeLocation assigned (required for package operations)
 
 ---
 
@@ -100,41 +101,19 @@ This condensed checklist provides a quick reference for setting up SharePoint fo
 
 ---
 
-## Phase 5: PackageHistory List (15 minutes)
-
-### Create List
-- [ ] Create Custom List named `PackageHistory`
-
-### Add Columns (9 total)
-- [ ] Title (default - Status Change description)
-- [ ] PackageID (lookup to Packages, required, include TrackingNumber field)
-- [ ] PreviousStatus (text)
-- [ ] NewStatus (text, required)
-- [ ] Location (lookup to Locations)
-- [ ] ChangedBy (person, required)
-- [ ] Timestamp (date/time, required, default: Today)
-- [ ] Notes (multi-line text)
-- [ ] ScannedBarcode (text)
-
-### Add Indexes
-- [ ] Index on PackageID
-- [ ] Index on Timestamp
-
----
-
-## Phase 6: Verification (10 minutes)
+## Phase 5: Verification (10 minutes)
 
 ### List Structure
-- [ ] All 4 lists created (Locations, Employees, Packages, PackageHistory)
+- [ ] All 3 lists created (Locations, Employees, Packages)
 - [ ] All columns present with correct types
-- [ ] All 10 indexes created across all lists
+- [ ] All 8 indexes created across all lists
+- [ ] Packages.Timeline field ready for audit trail (JSON array)
 
 ### Lookups Working
 - [ ] Locations.ParentLocation shows location names
 - [ ] Employees.OfficeLocation shows location names
 - [ ] Packages.CurrentLocation shows location names
 - [ ] Packages.DestinationLocation shows location names
-- [ ] PackageHistory.PackageID shows package titles
 
 ### Sample Data
 - [ ] 15+ locations imported with hierarchy
@@ -167,6 +146,7 @@ This condensed checklist provides a quick reference for setting up SharePoint fo
 - [ ] Location hierarchy works (Room → Building → Campus)
 - [ ] All lookup columns display names (not IDs)
 - [ ] At least 5 employees with badge IDs for testing
+- [ ] **ALL employees have OfficeLocation assigned** (required for package operations)
 - [ ] At least 10 locations covering multiple buildings
 
 ---
@@ -211,10 +191,12 @@ This condensed checklist provides a quick reference for setting up SharePoint fo
 
 ⚠️ **Don't Skip These**:
 - [ ] Creating Locations BEFORE Packages (lookup dependency)
+- [ ] Creating Locations BEFORE adding Employees (OfficeLocation dependency)
 - [ ] Indexing BadgeID column (critical for performance)
 - [ ] Enforcing unique values on BadgeID and TrackingNumber
 - [ ] Setting IsActive default to "Yes" (not empty)
 - [ ] Selecting "Include TrackingNumber" when creating PackageID lookup
+- [ ] **Assigning OfficeLocation to ALL employees** (critical for package operations)
 - [ ] Testing with actual badge reader hardware before POC
 
 ---

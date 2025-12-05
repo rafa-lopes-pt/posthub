@@ -38,8 +38,8 @@ export function createBadgeSwipeInput(options = {}) {
   const {
     onBadgeDetected,
     debounceMs = 300,
-    placeholder = 'Swipe badge or enter badge ID...',
-    instructionText = 'Please swipe your badge at the reader or enter your badge ID manually',
+    placeholder = 'Swipe smartcard or enter ID...',
+    instructionText = 'Please swipe your smartcard at the reader or enter your ID manually',
     showInstruction = true,
     autoClear = true,
     autoFocus = true,
@@ -117,7 +117,7 @@ export function createBadgeSwipeInput(options = {}) {
       onBadgeDetected(cleanBadgeId);
 
       // Success feedback
-      statusIndicator.innerHTML = '<span class="nofbiz__status-success">✓ Badge detected</span>';
+      statusIndicator.innerHTML = '<span class="nofbiz__status-success">✓ SmartCard detected</span>';
 
       // Auto-clear after delay
       if (autoClear) {

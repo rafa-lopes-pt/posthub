@@ -29,15 +29,17 @@ PostHub is an internal physical mail management system built with the SPARC fram
 3. **FacilitiesManager** - Admin access, reports, location management
 
 ### Package Workflow
-1. Regular user creates package details in "Send Mail" form → Status: **Sent** (Pending Pickup)
+1. Regular user creates package details in "Send Mail" form → Status: **Sent** (initial location: sender's office)
 2. User physically brings package to mailroom
 3. User swipes badge at facilities desk (badge reader pastes badge ID into focused input)
 4. System automatically searches for user's non-delivered packages
 5. Facilities staff selects one or more packages
 6. System generates barcode labels using JsBarcode library
 7. Export labels to PDF for printing
-8. Facilities scans barcodes to update package status as it moves through the workflow
+8. Facilities scans barcodes to update package status as it moves through the workflow (location tracked at every status change)
 9. Package moves through hierarchical locations (Campus → Building → Room) before final delivery
+
+**Location Tracking:** Every status change requires a location to be specified, ensuring complete audit trail of the package's journey.
 
 ### Package Statuses
 - **Sent** - Created by user, awaiting physical delivery to mailroom
@@ -66,7 +68,8 @@ PostHub is an internal physical mail management system built with the SPARC fram
 | Sender | Sender | Person or Group | Yes | Package sender (auto-populated from current user) |
 | Recipient | Recipient | Person or Group | Yes | Package recipient (lookup with auto-complete) |
 | Priority | Priority | Single line of text | No | Values: "Standard", "Urgent", "Low" |
-| Status | Status | Single line of text | Yes | Values: "Sent", "Received", "Stored", "In Transit", "Arrived", "Delivered" |
+| Status | Status | Single line of text | Yes | Current status: "Sent", "Received", "Stored", "In Transit", "Arrived", "Delivered" |
+| Timeline | Timeline | Multiple lines of text | No | JSON array of status changes: `[{"status":"Sent","date":"2025-12-03T10:00:00Z"}]` |
 | CurrentLocation | Current Location | Lookup | No | Lookup to Locations list |
 | DestinationLocation | Destination Location | Lookup | No | Lookup to Locations list |
 | PackageDetails | Package Details | Multiple lines of text | No | Size, weight, description |
@@ -146,29 +149,39 @@ PostHub is an internal physical mail management system built with the SPARC fram
 
 ---
 
-### 1.4 PackageHistory List
+**Timeline Field Details:**
 
-**Purpose**: Audit trail for package status changes
+The Timeline field stores a JSON array of status change objects. Each object records when a status change occurred.
 
-**List Name**: `PackageHistory`
+**IMPORTANT:** Location is **REQUIRED** for all timeline entries to ensure complete audit trail.
 
-**Columns**:
+```json
+[
+  {
+    "status": "Sent",
+    "date": "2025-12-03T10:00:00Z",
+    "location": "Main Office",
+    "locationId": 5,
+    "changedBy": "john@company.com",
+    "notes": "Package created"
+  },
+  {
+    "status": "Received",
+    "date": "2025-12-03T14:30:00Z",
+    "location": "Mailroom A",
+    "locationId": 10,
+    "changedBy": "jane@company.com",
+    "notes": "Label printed at facilities"
+  }
+]
+```
 
-| Internal Name | Display Name | Type | Required | Description/Settings |
-|--------------|-------------|------|----------|---------------------|
-| Title | Status Change | Single line of text | Yes | Brief description |
-| PackageID | Package ID | Lookup | Yes | Lookup to Packages list |
-| PreviousStatus | Previous Status | Single line of text | No | Previous status value |
-| NewStatus | New Status | Single line of text | Yes | New status value |
-| Location | Location | Lookup | No | Lookup to Locations list |
-| ChangedBy | Changed By | Person or Group | Yes | Auto-populated from current user |
-| Timestamp | Timestamp | Date/Time | Yes | Auto-populated |
-| Notes | Notes | Multiple lines of text | No | Additional context |
-| ScannedBarcode | Scanned Barcode | Single line of text | No | Barcode that triggered the change |
-
-**Index Requirements**:
-- Index on `PackageID` (for package history queries)
-- Index on `Timestamp` (for chronological sorting)
+**Benefits of Timeline approach:**
+- All package data in one list (no joins required)
+- Faster queries (single list lookup)
+- Complete audit trail with location tracking
+- Simpler SharePoint schema
+- Location is enforced for every status change
 
 ---
 
@@ -188,9 +201,12 @@ PostHub is an internal physical mail management system built with the SPARC fram
 - `searchEmployees(searchTerm)` - Search employees (for recipient autocomplete)
 - `getLocationsByType(locationType)` - Get active locations by type
 - `generateTrackingNumber()` - Generate unique tracking number (POSTHUB-YYYYMMDD-XXXXX)
-- `createPackage(packageData)` - Create package with tracking number
-- `updatePackageStatus(packageId, newStatus, locationId, notes)` - Update package status and log to history
+- `createPackage(packageData)` - Create package with tracking number (auto-fetches sender's office location)
+- `updatePackageStatus(packageId, newStatus, locationId, notes)` - Update package status and append to Timeline (**locationId is REQUIRED**)
+- `getPackageTimeline(packageId)` - Parse and return timeline history
+- `addTimelineEntry(currentTimeline, status, locationId, locationName, notes)` - Append new entry to Timeline (always includes location)
 - `getCurrentUserInfo()` - Get current user info
+- `getEmployeeByEmail(email)` - Get employee by email (includes OfficeLocation)
 
 ---
 
