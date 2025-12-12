@@ -3,7 +3,7 @@
  * Overview of all packages with metrics and management
  */
 
-import { getAllPackages } from '../services/mockData.js';
+import { getAllPackages, EMPLOYEES, PACKAGES } from '../services/mockData.js';
 
 /**
  * Dashboard Page Component
@@ -14,6 +14,7 @@ export class DashboardPage {
     this.container = null;
     this.packages = getAllPackages();
     this.filterStatus = 'all';
+    this.currentView = 'dashboard'; // 'dashboard' or 'scan'
   }
 
   /**
@@ -53,10 +54,296 @@ export class DashboardPage {
     const header = document.createElement('div');
     header.className = 'dashboard-page__header';
     header.innerHTML = `
-      <h2 class="dashboard-page__title">Facilities Dashboard</h2>
-      <p class="dashboard-page__description">Manage and track all packages across the organization</p>
+      <div class="dashboard-page__header-content">
+        <h2 class="dashboard-page__title">Facilities Dashboard</h2>
+        <p class="dashboard-page__description">Manage and track all packages across the organization</p>
+      </div>
+      <button class="btn btn--primary dashboard-page__scan-btn" id="scan-package-btn">
+        <span>&#128230;</span> Scan Package
+      </button>
     `;
+
+    header.querySelector('#scan-package-btn').addEventListener('click', () => {
+      this.showScanView();
+    });
+
     return header;
+  }
+
+  /**
+   * Show barcode scan view
+   */
+  showScanView() {
+    this.currentView = 'scan';
+    this.container.innerHTML = '';
+
+    const content = document.createElement('div');
+    content.className = 'dashboard-scan';
+
+    content.innerHTML = `
+      <button class="smartcard-back-btn" id="back-btn">
+        &larr; Back to Dashboard
+      </button>
+      <div class="dashboard-scan__card">
+        <div class="dashboard-scan__icon">&#128230;</div>
+        <h2 class="dashboard-scan__title">Scan Package</h2>
+        <p class="dashboard-scan__description">Scan a package barcode to view or update its status</p>
+        <div class="dashboard-scan__input-group">
+          <label for="barcode-input" class="dashboard-scan__label">Tracking Number</label>
+          <input
+            type="text"
+            id="barcode-input"
+            class="dashboard-scan__input"
+            placeholder="Scan barcode or enter tracking number"
+            autofocus
+          />
+        </div>
+        <button class="btn btn--primary dashboard-scan__submit" id="verify-btn">
+          Verify Barcode
+        </button>
+      </div>
+    `;
+
+    // Back button
+    content.querySelector('#back-btn').addEventListener('click', () => {
+      this.showDashboardView();
+    });
+
+    // Verify button - placeholder for now
+    const input = content.querySelector('#barcode-input');
+    const verifyBtn = content.querySelector('#verify-btn');
+
+    const handleVerify = () => {
+      const trackingNumber = input.value.trim().toUpperCase();
+      if (!trackingNumber) {
+        this.showScanError(input, 'Please enter a tracking number');
+        return;
+      }
+
+      // Find the package
+      const pkg = PACKAGES.find(p => p.TrackingNumber.toUpperCase() === trackingNumber);
+      if (!pkg) {
+        this.showScanError(input, 'Package not found. Please check the tracking number.');
+        return;
+      }
+
+      // Show update modal
+      this.showUpdatePackageModal(pkg);
+    };
+
+    verifyBtn.addEventListener('click', handleVerify);
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleVerify();
+    });
+
+    this.container.appendChild(content);
+
+    // Focus input
+    setTimeout(() => input.focus(), 100);
+  }
+
+  /**
+   * Show error on scan input
+   */
+  showScanError(input, message) {
+    input.classList.add('dashboard-scan__input--error');
+
+    const existingError = input.parentElement.querySelector('.dashboard-scan__error');
+    if (existingError) existingError.remove();
+
+    const errorEl = document.createElement('p');
+    errorEl.className = 'dashboard-scan__error';
+    errorEl.textContent = message;
+    input.parentElement.appendChild(errorEl);
+
+    setTimeout(() => {
+      input.classList.remove('dashboard-scan__input--error');
+      errorEl.remove();
+    }, 3000);
+  }
+
+  /**
+   * Show update package modal
+   */
+  showUpdatePackageModal(pkg) {
+    const existingModal = document.querySelector('.update-package-modal');
+    if (existingModal) existingModal.remove();
+
+    const statusOptions = ['In Transit', 'Arrived', 'Stored'];
+
+    const modal = document.createElement('div');
+    modal.className = 'update-package-modal';
+    modal.innerHTML = `
+      <div class="update-package-modal__backdrop"></div>
+      <div class="update-package-modal__content">
+        <div class="update-package-modal__header">
+          <h3 class="update-package-modal__title">Update Package</h3>
+          <button class="update-package-modal__close">&times;</button>
+        </div>
+        <div class="update-package-modal__body">
+          <div class="update-package-modal__info">
+            <div class="update-package-modal__tracking">${pkg.TrackingNumber}</div>
+            <div class="update-package-modal__current">
+              <span>Current Status: <strong>${pkg.Status}</strong></span>
+              <span>Current Location: <strong>${pkg.CurrentLocation}</strong></span>
+            </div>
+          </div>
+          <form class="update-package-form" id="update-package-form">
+            <div class="form-group">
+              <label class="form-label" for="new-status">New Status<span class="required">*</span></label>
+              <select class="form-input form-select" id="new-status" name="status" required>
+                ${statusOptions.map(status =>
+                  `<option value="${status}" ${status === 'Arrived' ? 'selected' : ''}>${status}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-location">New Location<span class="required">*</span></label>
+              <input type="text" class="form-input" id="new-location" name="location"
+                value="${pkg.CurrentLocation}" placeholder="e.g., Mailroom A, Room 102" required />
+            </div>
+            <div class="form-group" id="locker-id-group" style="display: none;">
+              <label class="form-label" for="locker-id">Locker ID</label>
+              <input type="text" class="form-input" id="locker-id" name="lockerId"
+                placeholder="e.g., L-101, A-25" />
+            </div>
+          </form>
+        </div>
+        <div class="update-package-modal__footer">
+          <button class="btn btn--secondary" id="modal-cancel-btn">Cancel</button>
+          <button class="btn btn--primary" id="modal-update-btn">Update Package</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('.update-package-modal__close').addEventListener('click', closeModal);
+    modal.querySelector('.update-package-modal__backdrop').addEventListener('click', closeModal);
+    modal.querySelector('#modal-cancel-btn').addEventListener('click', closeModal);
+
+    // Show/hide locker ID based on status
+    const statusSelect = modal.querySelector('#new-status');
+    const lockerIdGroup = modal.querySelector('#locker-id-group');
+
+    statusSelect.addEventListener('change', () => {
+      lockerIdGroup.style.display = statusSelect.value === 'Stored' ? 'block' : 'none';
+    });
+
+    // Update handler
+    modal.querySelector('#modal-update-btn').addEventListener('click', () => {
+      const form = modal.querySelector('#update-package-form');
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const newStatus = modal.querySelector('#new-status').value;
+      const newLocation = modal.querySelector('#new-location').value;
+      const lockerId = modal.querySelector('#locker-id').value.trim();
+
+      // Update package (in real app, this would be an API call)
+      pkg.Status = newStatus;
+      pkg.CurrentLocation = newLocation;
+      pkg.LockerId = lockerId;
+      pkg.Modified = new Date().toISOString();
+
+      // Show success and close
+      closeModal();
+      this.showUpdateSuccess(pkg);
+    });
+  }
+
+  /**
+   * Show update success message
+   */
+  showUpdateSuccess(pkg) {
+    const modal = document.createElement('div');
+    modal.className = 'success-modal';
+    modal.innerHTML = `
+      <div class="success-modal__backdrop"></div>
+      <div class="success-modal__content">
+        <div class="success-modal__icon">&#10003;</div>
+        <h3 class="success-modal__title">Package Updated!</h3>
+        <p class="success-modal__message">Package status has been updated successfully.</p>
+        <div class="success-modal__details">
+          <div class="detail-row">
+            <span class="detail-label">Tracking Number</span>
+            <span class="detail-value tracking-number">${pkg.TrackingNumber}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">New Status</span>
+            <span class="detail-value">${pkg.Status}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Location</span>
+            <span class="detail-value">${pkg.CurrentLocation}</span>
+          </div>
+          ${pkg.LockerId ? `
+          <div class="detail-row">
+            <span class="detail-label">Locker ID</span>
+            <span class="detail-value">${pkg.LockerId}</span>
+          </div>
+          ` : ''}
+        </div>
+        <div class="success-modal__actions">
+          <button class="btn btn--secondary" id="scan-another-btn">Scan Another</button>
+          <button class="btn btn--primary" id="done-btn">Done</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#done-btn').addEventListener('click', () => {
+      modal.remove();
+      this.showDashboardView();
+    });
+
+    modal.querySelector('#scan-another-btn').addEventListener('click', () => {
+      modal.remove();
+      // Clear the input and keep scanning
+      const input = document.querySelector('#barcode-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    });
+
+    modal.querySelector('.success-modal__backdrop').addEventListener('click', () => {
+      modal.remove();
+      this.showDashboardView();
+    });
+  }
+
+  /**
+   * Show dashboard view
+   */
+  showDashboardView() {
+    this.currentView = 'dashboard';
+    this.container.innerHTML = '';
+
+    // Page header
+    const header = this.createPageHeader();
+    this.container.appendChild(header);
+
+    // Metrics cards
+    const metrics = this.createMetricsSection();
+    this.container.appendChild(metrics);
+
+    // Filters
+    const filters = this.createFilters();
+    this.container.appendChild(filters);
+
+    // Package list
+    const packageList = document.createElement('div');
+    packageList.className = 'dashboard-page__list';
+    packageList.id = 'package-list';
+    this.container.appendChild(packageList);
+
+    this.renderPackageList();
   }
 
   /**
@@ -78,17 +365,12 @@ export class DashboardPage {
       received: this.packages.filter(p => p.Status === 'Received').length
     };
 
-    const urgent = this.packages.filter(p =>
-      p.Priority === 'Urgent' && !['Delivered', 'Received'].includes(p.Status)
-    ).length;
-
     return {
       total: this.packages.length,
       today: todayPackages,
       pending: byStatus.sent + byStatus.inTransit + byStatus.stored + byStatus.arrived,
       delivered: byStatus.delivered + byStatus.received,
-      inTransit: byStatus.inTransit,
-      urgent: urgent
+      inTransit: byStatus.inTransit
     };
   }
 
@@ -103,11 +385,8 @@ export class DashboardPage {
 
     const metricsData = [
       { label: 'Total Packages', value: metrics.total, icon: '&#128230;', color: 'default' },
-      { label: 'New Today', value: metrics.today, icon: '&#128197;', color: 'blue' },
       { label: 'In Transit', value: metrics.inTransit, icon: '&#128666;', color: 'orange' },
-      { label: 'Pending', value: metrics.pending, icon: '&#9202;', color: 'yellow' },
-      { label: 'Delivered', value: metrics.delivered, icon: '&#9989;', color: 'green' },
-      { label: 'Urgent', value: metrics.urgent, icon: '&#9888;', color: 'red' }
+      { label: 'Delivered', value: metrics.delivered, icon: '&#9989;', color: 'green' }
     ];
 
     metricsData.forEach(metric => {
@@ -211,7 +490,7 @@ export class DashboardPage {
     // Header
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
-    const columns = ['Tracking Number', 'Title', 'From', 'To', 'Status', 'Priority', 'Location', 'Date'];
+    const columns = ['Tracking Number', 'From', 'To', 'Status', 'Location', 'Date'];
     columns.forEach(col => {
       const th = document.createElement('th');
       th.textContent = col;
@@ -233,11 +512,6 @@ export class DashboardPage {
       tdTracking.textContent = pkg.TrackingNumber;
       row.appendChild(tdTracking);
 
-      // Title
-      const tdTitle = document.createElement('td');
-      tdTitle.textContent = pkg.Title;
-      row.appendChild(tdTitle);
-
       // From
       const tdFrom = document.createElement('td');
       tdFrom.textContent = pkg.SenderName;
@@ -256,14 +530,6 @@ export class DashboardPage {
       statusBadge.textContent = pkg.Status;
       tdStatus.appendChild(statusBadge);
       row.appendChild(tdStatus);
-
-      // Priority
-      const tdPriority = document.createElement('td');
-      const priorityBadge = document.createElement('span');
-      priorityBadge.className = `priority-badge priority-badge--${(pkg.Priority || 'Standard').toLowerCase()}`;
-      priorityBadge.textContent = pkg.Priority || 'Standard';
-      tdPriority.appendChild(priorityBadge);
-      row.appendChild(tdPriority);
 
       // Location
       const tdLocation = document.createElement('td');
@@ -302,7 +568,7 @@ export class DashboardPage {
       <div class="package-modal__backdrop"></div>
       <div class="package-modal__content">
         <div class="package-modal__header">
-          <h3 class="package-modal__title">${pkg.Title}</h3>
+          <h3 class="package-modal__title">${pkg.TrackingNumber}</h3>
           <button class="package-modal__close">&times;</button>
         </div>
         <div class="package-modal__body">
@@ -313,10 +579,6 @@ export class DashboardPage {
           <div class="package-detail">
             <label>Status</label>
             <span class="status-badge" style="background-color: ${this.getStatusColor(pkg.Status)}">${pkg.Status}</span>
-          </div>
-          <div class="package-detail">
-            <label>Priority</label>
-            <span class="priority-badge priority-badge--${(pkg.Priority || 'Standard').toLowerCase()}">${pkg.Priority || 'Standard'}</span>
           </div>
           <div class="package-detail">
             <label>From</label>
@@ -331,16 +593,8 @@ export class DashboardPage {
             <span>${pkg.CurrentLocation}</span>
           </div>
           <div class="package-detail">
-            <label>Destination</label>
-            <span>${pkg.DestinationLocation}</span>
-          </div>
-          <div class="package-detail">
             <label>Details</label>
             <span>${pkg.PackageDetails || '-'}</span>
-          </div>
-          <div class="package-detail">
-            <label>Notes</label>
-            <span>${pkg.Notes || '-'}</span>
           </div>
           <div class="package-detail">
             <label>Created</label>
@@ -348,8 +602,7 @@ export class DashboardPage {
           </div>
         </div>
         <div class="package-modal__footer">
-          <button class="btn btn--secondary modal-close-btn">Close</button>
-          <button class="btn btn--primary">Update Status</button>
+          <button class="btn btn--primary modal-close-btn">Close</button>
         </div>
       </div>
     `;

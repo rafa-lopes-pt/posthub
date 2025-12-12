@@ -46,7 +46,7 @@ const STATUS_COLORS = {
 export function createPackageTable(options = {}) {
   const {
     packages = [],
-    columns = ['TrackingNumber', 'Sender', 'Recipient', 'Status', 'Priority', 'CurrentLocation', 'Created'],
+    columns = ['TrackingNumber', 'Sender', 'Recipient', 'Status', 'CurrentLocation', 'Created'],
     selectable = false,
     onRowClick = null,
     onSelectionChange = null,
@@ -70,9 +70,7 @@ export function createPackageTable(options = {}) {
     Sender: 'Sender',
     Recipient: 'Recipient',
     Status: 'Status',
-    Priority: 'Priority',
     CurrentLocation: 'Current Location',
-    DestinationLocation: 'Destination',
     PackageDetails: 'Details',
     Created: 'Created',
     Modified: 'Last Updated'
@@ -95,17 +93,11 @@ export function createPackageTable(options = {}) {
         return value.Title || value.Name || value;
 
       case 'CurrentLocation':
-      case 'DestinationLocation':
         return value.Title || value;
 
       case 'Status':
         const color = STATUS_COLORS[value] || '#6c757d';
         return `<span class="nofbiz__status-badge" style="background-color: ${color}">${value}</span>`;
-
-      case 'Priority':
-        const priorityClass = value === 'Urgent' ? 'priority-urgent' :
-                             value === 'Low' ? 'priority-low' : 'priority-standard';
-        return `<span class="nofbiz__priority-badge ${priorityClass}">${value || 'Standard'}</span>`;
 
       case 'Created':
       case 'Modified':

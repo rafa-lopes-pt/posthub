@@ -94,12 +94,12 @@ export class SmartCardPage {
         <h2 class="smartcard-scan__title">${modeLabel}</h2>
         <p class="smartcard-scan__description">${modeDesc}</p>
         <div class="smartcard-scan__input-group">
-          <label for="badge-input" class="smartcard-scan__label">Badge ID</label>
+          <label for="badge-input" class="smartcard-scan__label">SmartCard ID</label>
           <input
             type="text"
             id="badge-input"
             class="smartcard-scan__input"
-            placeholder="Scan card or enter Badge ID (e.g., BADGE001)"
+            placeholder="Scan card or enter SmartCard ID (e.g., BADGE001)"
             autofocus
           />
           <p class="smartcard-scan__hint">For demo: Try BADGE001 through BADGE010</p>
@@ -122,13 +122,13 @@ export class SmartCardPage {
     const handleScan = () => {
       const badgeId = input.value.trim().toUpperCase();
       if (!badgeId) {
-        this.showError(input, 'Please enter a Badge ID');
+        this.showError(input, 'Please enter a SmartCard ID');
         return;
       }
 
       const employee = EMPLOYEES.find(emp => emp.BadgeID.toUpperCase() === badgeId);
       if (!employee) {
-        this.showError(input, 'Badge ID not found. Please try again.');
+        this.showError(input, 'SmartCard ID not found. Please try again.');
         return;
       }
 
@@ -289,25 +289,17 @@ export class SmartCardPage {
         <span class="status-badge" style="background-color: ${statusColors[pkg.Status]}">${pkg.Status}</span>
       </div>
       <div class="package-card__body">
-        <h3 class="package-card__title">${pkg.Title}</h3>
+        <h3 class="package-card__title">${pkg.TrackingNumber}</h3>
         <div class="package-card__details">
           <div class="package-card__detail">
             <span class="package-card__detail-label">${recipientLabel}</span>
             <span class="package-card__detail-value">${personName}</span>
           </div>
-          <div class="package-card__detail">
-            <span class="package-card__detail-label">Destination</span>
-            <span class="package-card__detail-value">${pkg.DestinationLocation}</span>
-          </div>
-          <div class="package-card__detail">
-            <span class="package-card__detail-label">Priority</span>
-            <span class="priority-badge priority-badge--${(pkg.Priority || 'Standard').toLowerCase()}">${pkg.Priority || 'Standard'}</span>
-          </div>
         </div>
       </div>
       <div class="package-card__footer">
         <button class="btn btn--primary package-card__action">
-          ${this.currentMode === 'delivery' ? 'Confirm Drop-off' : 'Confirm Pickup'}
+          ${this.currentMode === 'delivery' ? 'Print Label' : 'Confirm Pickup'}
         </button>
       </div>
     `;
@@ -324,10 +316,175 @@ export class SmartCardPage {
    * Confirm delivery/pickup action
    */
   confirmAction(pkg) {
-    const actionLabel = this.currentMode === 'delivery' ? 'dropped off' : 'picked up';
-    const newStatus = this.currentMode === 'delivery' ? 'Stored' : 'Received';
+    if (this.currentMode === 'delivery') {
+      // Show barcode print view for delivery
+      this.showBarcodePrint(pkg);
+    } else {
+      // Show success modal for pickup
+      this.showPickupSuccess(pkg);
+    }
+  }
 
-    // Show success modal
+  /**
+   * Show barcode print view for delivery
+   */
+  showBarcodePrint(pkg) {
+    this.container.innerHTML = '';
+
+    const content = document.createElement('div');
+    content.className = 'smartcard-barcode';
+
+    content.innerHTML = `
+      <div class="smartcard-barcode__header">
+        <button class="smartcard-back-btn" id="back-btn">
+          &larr; Back
+        </button>
+        <h2 class="smartcard-barcode__title">Print Package Label</h2>
+        <p class="smartcard-barcode__description">Print this label and attach it to your package</p>
+      </div>
+      <div class="smartcard-barcode__content">
+        <div class="barcode-label" id="barcode-label">
+          <div class="barcode-label__header">
+            <span class="barcode-label__logo">Pigeon</span>
+            <span class="barcode-label__date">${new Date().toLocaleDateString()}</span>
+          </div>
+          <div class="barcode-label__barcode">
+            <svg id="barcode-svg"></svg>
+          </div>
+          <div class="barcode-label__info">
+            <div class="barcode-label__row">
+              <span class="barcode-label__field-label">From:</span>
+              <span class="barcode-label__field-value">${pkg.SenderName}</span>
+            </div>
+            <div class="barcode-label__row">
+              <span class="barcode-label__field-label">To:</span>
+              <span class="barcode-label__field-value">${pkg.RecipientName}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="smartcard-barcode__actions">
+        <button class="btn btn--secondary" id="done-btn">Done</button>
+        <button class="btn btn--primary" id="print-btn">
+          <span>&#128424;</span> Print Label
+        </button>
+      </div>
+    `;
+
+    this.container.appendChild(content);
+
+    // Generate barcode
+    const barcodeSvg = content.querySelector('#barcode-svg');
+    if (typeof JsBarcode !== 'undefined') {
+      JsBarcode(barcodeSvg, pkg.TrackingNumber, {
+        format: 'CODE128',
+        width: 2,
+        height: 80,
+        displayValue: true,
+        fontSize: 14,
+        margin: 10,
+        background: '#ffffff',
+        lineColor: '#000000'
+      });
+    } else {
+      barcodeSvg.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#666">Barcode: ${pkg.TrackingNumber}</text>`;
+    }
+
+    // Back button
+    content.querySelector('#back-btn').addEventListener('click', () => {
+      this.showPackageList();
+    });
+
+    // Done button
+    content.querySelector('#done-btn').addEventListener('click', () => {
+      this.showPackageList();
+    });
+
+    // Print button
+    content.querySelector('#print-btn').addEventListener('click', () => {
+      this.printLabel();
+    });
+  }
+
+  /**
+   * Print the barcode label
+   */
+  printLabel() {
+    const labelContent = document.getElementById('barcode-label');
+    if (!labelContent) return;
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Package Label</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+          }
+          .barcode-label {
+            border: 2px solid #000;
+            padding: 15px;
+            max-width: 350px;
+            margin: 0 auto;
+          }
+          .barcode-label__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+          }
+          .barcode-label__logo {
+            font-size: 18px;
+            font-weight: bold;
+          }
+          .barcode-label__date {
+            font-size: 12px;
+            color: #666;
+          }
+          .barcode-label__barcode {
+            text-align: center;
+            margin: 15px 0;
+          }
+          .barcode-label__barcode svg {
+            max-width: 100%;
+          }
+          .barcode-label__info {
+            font-size: 12px;
+          }
+          .barcode-label__row {
+            display: flex;
+            margin-bottom: 5px;
+          }
+          .barcode-label__field-label {
+            font-weight: bold;
+            width: 50px;
+          }
+          .barcode-label__field-value {
+            flex: 1;
+          }
+        </style>
+      </head>
+      <body>
+        ${labelContent.outerHTML}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  }
+
+  /**
+   * Show success modal for pickup
+   */
+  showPickupSuccess(pkg) {
     const modal = document.createElement('div');
     modal.className = 'success-modal';
     modal.innerHTML = `
@@ -335,7 +492,7 @@ export class SmartCardPage {
       <div class="success-modal__content">
         <div class="success-modal__icon">&#10003;</div>
         <h3 class="success-modal__title">Success!</h3>
-        <p class="success-modal__message">Package has been ${actionLabel} successfully.</p>
+        <p class="success-modal__message">Package has been picked up successfully.</p>
         <div class="success-modal__details">
           <div class="detail-row">
             <span class="detail-label">Tracking Number</span>
@@ -343,7 +500,7 @@ export class SmartCardPage {
           </div>
           <div class="detail-row">
             <span class="detail-label">New Status</span>
-            <span class="detail-value">${newStatus}</span>
+            <span class="detail-value">Received</span>
           </div>
         </div>
         <div class="success-modal__actions">
@@ -356,7 +513,6 @@ export class SmartCardPage {
 
     modal.querySelector('#done-btn').addEventListener('click', () => {
       modal.remove();
-      // Refresh the package list (in real app, would update the data)
       this.showPackageList();
     });
 

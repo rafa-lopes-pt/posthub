@@ -158,8 +158,8 @@ export class PackagesPage {
 
     // Create table with appropriate columns
     const columns = this.activeTab === 'incoming'
-      ? ['TrackingNumber', 'SenderName', 'Status', 'Priority', 'CurrentLocation', 'Created']
-      : ['TrackingNumber', 'RecipientName', 'Status', 'Priority', 'CurrentLocation', 'Created'];
+      ? ['TrackingNumber', 'SenderName', 'Status', 'CurrentLocation', 'Created']
+      : ['TrackingNumber', 'RecipientName', 'Status', 'CurrentLocation', 'Created'];
 
     // Custom column names for display
     const tableWrapper = document.createElement('div');
@@ -179,7 +179,6 @@ export class PackagesPage {
       SenderName: 'From',
       RecipientName: 'To',
       Status: 'Status',
-      Priority: 'Priority',
       CurrentLocation: 'Location',
       Created: 'Date'
     };
@@ -225,11 +224,6 @@ export class PackagesPage {
           badge.className = 'status-badge';
           badge.style.backgroundColor = statusColors[pkg[col]] || '#6c757d';
           badge.textContent = pkg[col];
-          td.appendChild(badge);
-        } else if (col === 'Priority') {
-          const badge = document.createElement('span');
-          badge.className = `priority-badge priority-badge--${(pkg[col] || 'Standard').toLowerCase()}`;
-          badge.textContent = pkg[col] || 'Standard';
           td.appendChild(badge);
         } else if (col === 'Created') {
           td.textContent = new Date(pkg[col]).toLocaleDateString('en-US', {
@@ -296,7 +290,7 @@ export class PackagesPage {
       <div class="package-modal__backdrop"></div>
       <div class="package-modal__content">
         <div class="package-modal__header">
-          <h3 class="package-modal__title">${pkg.Title}</h3>
+          <h3 class="package-modal__title">${pkg.TrackingNumber}</h3>
           <button class="package-modal__close">&times;</button>
         </div>
         <div class="package-modal__body">
@@ -307,10 +301,6 @@ export class PackagesPage {
           <div class="package-detail">
             <label>Status</label>
             <span class="status-badge" style="background-color: ${this.getStatusColor(pkg.Status)}">${pkg.Status}</span>
-          </div>
-          <div class="package-detail">
-            <label>Priority</label>
-            <span class="priority-badge priority-badge--${(pkg.Priority || 'Standard').toLowerCase()}">${pkg.Priority || 'Standard'}</span>
           </div>
           <div class="package-detail">
             <label>From</label>
@@ -325,16 +315,8 @@ export class PackagesPage {
             <span>${pkg.CurrentLocation}</span>
           </div>
           <div class="package-detail">
-            <label>Destination</label>
-            <span>${pkg.DestinationLocation}</span>
-          </div>
-          <div class="package-detail">
             <label>Details</label>
             <span>${pkg.PackageDetails || '-'}</span>
-          </div>
-          <div class="package-detail">
-            <label>Notes</label>
-            <span>${pkg.Notes || '-'}</span>
           </div>
           <div class="package-detail">
             <label>Created</label>

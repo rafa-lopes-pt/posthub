@@ -161,8 +161,7 @@ export function createBarcodeGenerator(options = {}) {
 
       infoSection.innerHTML = `
         <div class="nofbiz__info-header">
-          <div class="nofbiz__package-title">${pkg.Title || 'Package'}</div>
-          <div class="nofbiz__package-id">#${pkg.Id || pkg.ID}</div>
+          <div class="nofbiz__package-title">${pkg.TrackingNumber}</div>
         </div>
         <div class="nofbiz__info-grid">
           <div class="nofbiz__info-item">
@@ -172,14 +171,6 @@ export function createBarcodeGenerator(options = {}) {
           <div class="nofbiz__info-item">
             <span class="nofbiz__info-label">To:</span>
             <span class="nofbiz__info-value">${getPersonName(pkg.Recipient)}</span>
-          </div>
-          <div class="nofbiz__info-item">
-            <span class="nofbiz__info-label">Destination:</span>
-            <span class="nofbiz__info-value">${getLocationName(pkg.DestinationLocation)}</span>
-          </div>
-          <div class="nofbiz__info-item">
-            <span class="nofbiz__info-label">Priority:</span>
-            <span class="nofbiz__info-value nofbiz__priority-${(pkg.Priority || 'Standard').toLowerCase()}">${pkg.Priority || 'Standard'}</span>
           </div>
           <div class="nofbiz__info-item">
             <span class="nofbiz__info-label">Created:</span>

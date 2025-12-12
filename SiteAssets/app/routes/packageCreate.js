@@ -57,15 +57,6 @@ export class PackageCreatePage {
     form.className = 'package-form';
     form.addEventListener('submit', (e) => this.handleSubmit(e));
 
-    // Package Title
-    form.appendChild(this.createFormGroup({
-      id: 'title',
-      label: 'Package Title',
-      type: 'text',
-      placeholder: 'e.g., Important Documents',
-      required: true
-    }));
-
     // Recipient
     form.appendChild(this.createSelectGroup({
       id: 'recipient',
@@ -74,44 +65,12 @@ export class PackageCreatePage {
       required: true
     }));
 
-    // Priority
-    form.appendChild(this.createSelectGroup({
-      id: 'priority',
-      label: 'Priority',
-      options: [
-        { value: 'Low', label: 'Low' },
-        { value: 'Standard', label: 'Standard' },
-        { value: 'Urgent', label: 'Urgent' }
-      ],
-      defaultValue: 'Standard',
-      required: true,
-      isSimple: true
-    }));
-
-    // Destination Location
-    form.appendChild(this.createFormGroup({
-      id: 'destination',
-      label: 'Destination Location',
-      type: 'text',
-      placeholder: 'e.g., Room 102, Building A',
-      required: true
-    }));
-
     // Package Details
     form.appendChild(this.createFormGroup({
       id: 'details',
       label: 'Package Details',
       type: 'textarea',
-      placeholder: 'Describe the package (size, contents, etc.)',
-      required: false
-    }));
-
-    // Notes
-    form.appendChild(this.createFormGroup({
-      id: 'notes',
-      label: 'Special Instructions',
-      type: 'textarea',
-      placeholder: 'Any special handling instructions...',
+      placeholder: 'Provide an optional description for the package (size, contents, etc.)',
       required: false
     }));
 
@@ -223,19 +182,20 @@ export class PackageCreatePage {
     const formData = new FormData(e.target);
     const recipient = EMPLOYEES.find(emp => emp.Email === formData.get('recipient'));
 
+    const trackingNumber = this.generateTrackingNumber();
     const packageData = {
-      Title: formData.get('title'),
-      TrackingNumber: this.generateTrackingNumber(),
+      Title: trackingNumber,
+      TrackingNumber: trackingNumber,
       Sender: this.currentUser.email,
       SenderName: this.currentUser.name,
       Recipient: formData.get('recipient'),
       RecipientName: recipient ? recipient.Name : formData.get('recipient'),
-      Priority: formData.get('priority'),
+      Priority: 'Standard',
       Status: 'Sent',
       CurrentLocation: 'Mailroom A',
-      DestinationLocation: formData.get('destination'),
+      DestinationLocation: recipient ? recipient.OfficeLocation : 'Mailroom A',
       PackageDetails: formData.get('details'),
-      Notes: formData.get('notes'),
+      Notes: '',
       Created: new Date().toISOString(),
       Modified: new Date().toISOString()
     };
@@ -277,10 +237,6 @@ export class PackageCreatePage {
           <div class="detail-row">
             <span class="detail-label">Recipient:</span>
             <span class="detail-value">${packageData.RecipientName}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Destination:</span>
-            <span class="detail-value">${packageData.DestinationLocation}</span>
           </div>
         </div>
         <div class="success-modal__actions">

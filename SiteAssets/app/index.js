@@ -8,15 +8,18 @@ import { PackagesPage } from './routes/packages.js';
 import { PackageCreatePage } from './routes/packageCreate.js';
 import { DashboardPage } from './routes/dashboard.js';
 import { SmartCardPage } from './routes/smartcard.js';
+import { EMPLOYEES } from './services/mockData.js';
 
 // Mock current user - in production this would come from SharePoint
 const CURRENT_USER = {
-  email: 'sarah.johnson@company.com',
-  name: 'Sarah Johnson',
-  department: 'Marketing',
-  badgeId: 'BADGE002',
-  officeLocation: 'Room 102'
-};
+  id: EMPLOYEES[10].Id,
+  name: EMPLOYEES[10].Name,
+  email: EMPLOYEES[10].Email,
+  department: EMPLOYEES[10].Department,
+  badgeId: EMPLOYEES[10].BadgeID,
+  officeLocation: EMPLOYEES[10].OfficeLocation
+}
+
 
 // App state
 const state = {
@@ -65,19 +68,15 @@ function createHeader(user) {
     </div>
     <nav class="posthub-nav">
       <button class="nav-link" data-route="packages">
-        <span class="nav-link__icon">&#128229;</span>
         <span class="nav-link__text">My Mail</span>
       </button>
       <button class="nav-link" data-route="create">
-        <span class="nav-link__icon">&#128228;</span>
         <span class="nav-link__text">Send</span>
       </button>
       <button class="nav-link" data-route="dashboard">
-        <span class="nav-link__icon">&#128202;</span>
         <span class="nav-link__text">Dashboard</span>
       </button>
       <button class="nav-link" data-route="smartcard">
-        <span class="nav-link__icon">&#128179;</span>
         <span class="nav-link__text">Scan SmartCard</span>
       </button>
     </nav>
