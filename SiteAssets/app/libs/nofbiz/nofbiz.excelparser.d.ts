@@ -48,7 +48,8 @@ declare function generateSampleMetricsCSV(projectsData: Array<{
  */
 declare function dataToCSV(data: unknown[]): string;
 /**
- * Downloads CSV file in the browser
+ * Downloads CSV file in the browser with CSP-compatible fallback
+ * Tries blob URL first, falls back to data URL for SharePoint compatibility
  */
 declare function downloadCSV(csvContent: string, filename?: string): void;
 /**

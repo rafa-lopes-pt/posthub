@@ -603,6 +603,7 @@ declare class DateInput extends FormControl<string> {
     constructor(fieldOrValue: string | FormField<string>, props: DateInputProps);
     toString(): string;
     protected _applyEventListeners(): void;
+    private _getDatepickerFormat;
     render(): void;
 }
 

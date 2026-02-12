@@ -1,12 +1,44 @@
-# PostHub SharePoint Setup - Documentation Index
+# PostHub Documentation Index
 
-**Complete guide to all SharePoint setup documentation for PostHub project**
+**Complete guide to all PostHub documentation**
 
-Last Updated: December 3, 2025
+Last Updated: February 11, 2026
 
 ---
 
-## Quick Navigation
+## AI Assistant References
+
+**For Claude Code agents and AI-assisted development:**
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **[claude.md](./claude.md)** | Central configuration hub | Agent catalog, rules, documentation links |
+| **[.claude/posthub-guide.md](./.claude/posthub-guide.md)** | Comprehensive domain guide | Understand PostHub domain, patterns, workflows |
+| **[.claude/rules/](./.claude/rules/)** | Critical constraints (5 files) | Auto-loaded constraints for every conversation |
+| **[.claude/agents/](./.claude/agents/)** | Specialized agents (4 files) | PostHub-specific development agents |
+
+### Rules (Auto-Loaded Constraints)
+
+| File | Purpose |
+|------|---------|
+| `critical-constraints.md` | Hard rules that prevent runtime failures (SPARC + PostHub) |
+| `posthub-workflow.md` | Package lifecycle and business logic rules |
+| `posthub-components.md` | PostHub-specific component patterns |
+| `sharepoint-data.md` | SharePoint list schemas and data access patterns |
+| `home-route.md` | Home route structure convention |
+
+### Agents
+
+| Agent | Use When |
+|-------|----------|
+| `posthub-developer` | Building/modifying PostHub features |
+| `posthub-reviewer` | Reviewing code for constraint violations |
+| `posthub-tester` | Testing hardware integration and workflows |
+| `sharepoint-admin` | Planning SharePoint schema changes |
+
+---
+
+## Quick Navigation (SharePoint Setup)
 
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
