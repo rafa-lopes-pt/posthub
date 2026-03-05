@@ -138,7 +138,8 @@ export default defineRoute(async (config) => {
       new Button('Create', {
         onClickHandler: async () => {
           const selectedRecipient = recipientPicker.selectedResult
-          const destination = locationField.value
+          const destinationRaw = locationField.value
+          const destination = destinationRaw?.value ?? destinationRaw
           const detailsTextarea = document.querySelector('.send-mail__form-textarea')
           const details = detailsTextarea ? detailsTextarea.value : ''
 

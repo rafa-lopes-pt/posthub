@@ -5,20 +5,13 @@ import {
   Button,
   LinkButton,
   getIcon,
-  Toast,
   resolvePath,
-  SiteApi,
-  CurrentUser,
 } from '../../../../libs/nofbiz/nofbiz.base.js'
 
 import { createNavbar } from '../../../../components/navbar.js'
-import { LIST_PACKAGES } from '../../../../utils/constants.js'
 
 export default defineRoute(async (config) => {
   config.setRouteTitle('PostHub - Package Label')
-
-  const siteApi = new SiteApi()
-  const user = new CurrentUser()
 
   // Read package data from sessionStorage
   const storedData = sessionStorage.getItem('posthub_label_package')
@@ -37,33 +30,13 @@ export default defineRoute(async (config) => {
   }
 
   const pkg = JSON.parse(storedData)
-  sessionStorage.removeItem('posthub_label_package')
-
-  // Update package status to 'stored'
-  if (pkg.Id && pkg.Status !== 'stored') {
-    const timeline = pkg.Timeline ? JSON.parse(pkg.Timeline) : []
-    timeline.push({
-      status: 'stored',
-      date: new Date().toISOString(),
-      location: pkg.CurrentLocation,
-      changedBy: user.get('email'),
-      notes: 'Label printed at facilities'
-    })
-
-    await siteApi.list(LIST_PACKAGES).updateItem(pkg.Id, {
-      Status: 'stored',
-      Timeline: JSON.stringify(timeline)
-    })
-
-    Toast.success(`Package ${pkg.Title} status updated to stored`)
-  }
 
   // QR code data uses TrackingNumber key for human readability
   const qrData = {
     TrackingNumber: pkg.Title,
     Sender: pkg.Sender,
     Recipient: pkg.Recipient,
-    Status: 'stored',
+    Status: pkg.Status,
     CurrentLocation: pkg.CurrentLocation,
     DestinationLocation: pkg.DestinationLocation,
     PackageDetails: pkg.PackageDetails
@@ -85,9 +58,7 @@ export default defineRoute(async (config) => {
   }
 
   whenReady('qrcode', (qrElement) => {
-    const script = document.createElement('script')
-    script.src = resolvePath('@/libs/qrcode.min.js')
-    script.onload = () => {
+    function generateQR() {
       new QRCode(qrElement, {
         text: JSON.stringify(qrData),
         width: 256,
@@ -97,7 +68,15 @@ export default defineRoute(async (config) => {
         correctLevel: QRCode.CorrectLevel.H
       })
     }
-    document.head.appendChild(script)
+
+    if (typeof QRCode !== 'undefined') {
+      generateQR()
+    } else {
+      const script = document.createElement('script')
+      script.src = resolvePath('@/libs/qrcode.min.js')
+      script.onload = generateQR
+      document.head.appendChild(script)
+    }
   })
 
   // Print handler
