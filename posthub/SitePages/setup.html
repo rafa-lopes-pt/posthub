@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setup - PostHub</title>
+
+    <script src="../jquery.js"></script>
+    <script src="../sharepointContext.js"></script>
+    <script src="../spInterceptor.js"></script>
+
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+      h1 { color: #333; }
+      #run-setup { padding: 0.75rem 1.5rem; font-size: 1rem; cursor: pointer; background: #00915a; color: white; border: none; border-radius: 4px; }
+      #run-setup:hover { background: #007a4d; }
+      #run-setup:disabled { background: #999; cursor: not-allowed; }
+      #log { background: #f5f5f5; border: 1px solid #ddd; padding: 1rem; margin-top: 1rem; font-size: 0.9rem; white-space: pre-wrap; max-height: 500px; overflow-y: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>PostHub Setup</h1>
+    <p>Click the button below to create all SharePoint lists and fields. The script is idempotent -- it can be re-run safely.</p>
+    <button id="run-setup">Run Setup</button>
+    <pre id="log"></pre>
+
+    <script type="module">
+      import { SiteApi } from '../SiteAssets/app/libs/nofbiz/nofbiz.base.js'
+
+      const logEl = document.getElementById('log')
+      function log(msg) {
+        logEl.textContent += msg + '\n'
+        logEl.scrollTop = logEl.scrollHeight
+      }
+
+      async function createListWithFields(siteApi, listName, fields) {
+        try {
+          const listApi = await siteApi.createList(listName)
+          log('Created list: ' + listName)
+
+          for (const field of fields) {
+            try {
+              await listApi.createField(field)
+              log('  + ' + field.title + (field.indexed ? ' (indexed)' : '') + (field.multiline ? ' (Note)' : ''))
+            } catch (e) {
+              log('  ! ' + field.title + ' -- ' + (e.message || 'already exists?'))
+            }
+          }
+
+          return listApi
+        } catch (e) {
+          log(listName + ' list -- ' + (e.message || 'may already exist'))
+          return null
+        }
+      }
+
+      document.getElementById('run-setup').addEventListener('click', async () => {
+        const btn = document.getElementById('run-setup')
+        btn.disabled = true
+        btn.textContent = 'Running...'
+        logEl.textContent = ''
+
+        log('Starting setup...\n')
+        const siteApi = new SiteApi()
+
+        // -- Packages --
+        const packagesApi = await createListWithFields(siteApi, 'Packages', [
+          { title: 'Sender', indexed: true },
+          { title: 'Recipient', indexed: true },
+          { title: 'Status', indexed: true },
+          { title: 'Timeline', multiline: true },
+          { title: 'CurrentLocation' },
+          { title: 'DestinationLocation' },
+          { title: 'PackageDetails', multiline: true },
+          { title: 'InternalNotes', multiline: true }
+        ])
+
+        // Index the Title field (TrackingNumber) for QR code scan lookup
+        if (packagesApi) {
+          try {
+            await packagesApi.setFieldIndexed('Title', true)
+            log('  + Title indexed (TrackingNumber)')
+          } catch (e) {
+            log('  ! Title index -- ' + (e.message || 'may already be indexed'))
+          }
+        }
+
+        log('')
+
+        // -- Employees --
+        await createListWithFields(siteApi, 'Employees', [
+          { title: 'SmartCardID', indexed: true },
+          { title: 'Email', indexed: true }
+        ])
+
+        log('')
+
+        // -- Locations --
+        const locationsApi = await createListWithFields(siteApi, 'Locations', [
+          { title: 'City' },
+          { title: 'Office' },
+          { title: 'Floor' },
+          { title: 'IsActive' }
+        ])
+
+        // Seed default locations
+        if (locationsApi) {
+          log('')
+          log('Seeding locations...')
+
+          const locations = [
+            { Title: 'PORTO | URBO | 0', City: 'PORTO', Office: 'URBO', Floor: '0', IsActive: 'true' },
+            { Title: 'LISBON | TOC | 1', City: 'LISBON', Office: 'TOC', Floor: '1', IsActive: 'true' },
+            { Title: 'LISBON | TOR | 1', City: 'LISBON', Office: 'TOR', Floor: '1', IsActive: 'true' },
+            { Title: 'LISBON | ECHO | 0', City: 'LISBON', Office: 'ECHO', Floor: '0', IsActive: 'true' },
+            { Title: 'LISBON | AURA | 7', City: 'LISBON', Office: 'AURA', Floor: '7', IsActive: 'true' },
+            { Title: 'LISBON | LUMNIA | 0', City: 'LISBON', Office: 'LUMNIA', Floor: '0', IsActive: 'true' }
+          ]
+
+          for (const loc of locations) {
+            try {
+              await locationsApi.createItem(loc)
+              log('  + ' + loc.Title)
+            } catch (e) {
+              log('  ! ' + loc.Title + ' -- ' + (e.message || 'may already exist'))
+            }
+          }
+        }
+
+        log('\nSetup complete!')
+        btn.textContent = 'Done'
+      })
+    </script>
+  </body>
+</html>

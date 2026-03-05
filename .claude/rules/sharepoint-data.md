@@ -2,15 +2,23 @@
 
 SharePoint list schemas and data access patterns for PostHub.
 
+## SPARC Field Type Constraint
+
+SPARC's `createField` only supports two field types:
+- **Text** -- single line of text (`createField({ title, indexed? })`)
+- **Note** -- multiline text (`createField({ title, multiline: true })`)
+
+No Lookup, Person, Boolean, Choice, or Number types exist in SPARC. All data is stored as strings. Validation happens in client code via Zod.
+
 ## SharePoint Lists Overview
 
 PostHub uses 3 SharePoint lists:
 
 | List | Purpose | Key Columns | Indexes |
 |------|---------|-------------|---------|
-| **Packages** | Package records | TrackingNumber, Status, Timeline, Sender, Recipient | 4 indexes |
-| **Employees** | Employee directory | BadgeID, Email, OfficeLocation | 2 indexes |
-| **Locations** | Location hierarchy | Title, LocationType, ParentLocation | 2 indexes |
+| **Packages** | Package records | Title (TrackingNumber), Status, Timeline, Sender, Recipient | 4 indexes |
+| **Employees** | Smart card lookup only | Title, SmartCardID, Email | 2 indexes |
+| **Locations** | Flat location list | Title, City, Office, Floor, IsActive | 0 indexes |
 
 ## Packages List Schema
 
@@ -22,45 +30,43 @@ PostHub uses 3 SharePoint lists:
 
 | Internal Name | Display Name | Type | Required | Description |
 |--------------|-------------|------|----------|-------------|
-| Title | Package Description | Single line of text | Yes | Brief description |
-| TrackingNumber | Tracking Number | Single line of text | Yes | Unique barcode (auto-generated) |
-| Sender | Sender | Person or Group | Yes | Auto-populated from current user |
-| Recipient | Recipient | Person or Group | Yes | Lookup with auto-complete |
-| Priority | Priority | Single line of text | No | "Standard", "Urgent", "Low" |
-| Status | Status | Single line of text | Yes | Current status (see workflow) |
-| Timeline | Timeline | Multiple lines of text | No | JSON array of status changes |
-| CurrentLocation | Current Location | Lookup | No | Lookup to Locations list |
-| DestinationLocation | Destination Location | Lookup | No | Lookup to Locations list |
-| PackageDetails | Package Details | Multiple lines of text | No | Size, weight, description |
-| Notes | Notes | Multiple lines of text | No | General notes |
+| Title | Tracking Number | Text | Yes | Unique, indexed. Format: `POSTHUB-YYYYMMDD-XXXXX` |
+| Sender | Sender | Text | Yes | Email string, indexed |
+| Recipient | Recipient | Text | Yes | Email string, indexed |
+| Status | Status | Text | Yes | created, stored, in transit, arrived, delivered |
+| Timeline | Timeline | Note (multiline) | No | JSON array of status changes |
+| CurrentLocation | Current Location | Text | No | Location title string (e.g. "LISBON \| TOC \| 1") |
+| DestinationLocation | Destination Location | Text | No | Location title string |
+| PackageDetails | Package Details | Note (multiline) | No | Description and details |
+| InternalNotes | Internal Notes | Note (multiline) | No | Internal notes |
+
+**Note:** The Title column IS the TrackingNumber -- SPARC uses Title as the primary field.
 
 ### Indexes (Critical for Performance)
 
-1. **TrackingNumber** (for barcode scans)
+1. **Title** (TrackingNumber -- for QR code scans)
 2. **Status** (for filtering)
 3. **Sender** (for "My Mail" queries)
 4. **Recipient** (for "My Mail" queries)
 
 ### Timeline Field Format
 
-**Type:** Multiple lines of text (plain text)
+**Type:** Note (multiline, plain text)
 **Content:** JSON array (stringified)
 
 ```json
 [
   {
-    "status": "Sent",
+    "status": "created",
     "date": "2025-12-03T10:00:00Z",
-    "location": "Main Office",
-    "locationId": 5,
+    "location": "LISBON | TOC | 1",
     "changedBy": "john@company.com",
     "notes": "Package created"
   },
   {
-    "status": "Received",
+    "status": "stored",
     "date": "2025-12-03T14:30:00Z",
-    "location": "Mailroom A",
-    "locationId": 10,
+    "location": "LISBON | TOC | 1",
     "changedBy": "jane@company.com",
     "notes": "Label printed at facilities"
   }
@@ -71,7 +77,7 @@ PostHub uses 3 SharePoint lists:
 
 ## Employees List Schema
 
-**Purpose:** Employee directory with badge integration
+**Purpose:** Smart card lookup only (employee data comes from People API)
 
 **List Name:** `Employees`
 
@@ -79,26 +85,20 @@ PostHub uses 3 SharePoint lists:
 
 | Internal Name | Display Name | Type | Required | Description |
 |--------------|-------------|------|----------|-------------|
-| Name | Name | Single line of text | Yes | Employee full name |
-| Email | Email | Single line of text | Yes | Employee email |
-| BadgeID | Badge ID | Single line of text | Yes | Unique badge identifier |
-| Department | Department | Single line of text | No | Department name |
-| OfficeLocation | Office Location | Lookup | No | Lookup to Locations list |
-| Manager | Manager | Person or Group | No | Employee's manager |
-| Building | Building | Single line of text | No | Building name |
-| Campus | Campus | Single line of text | No | Campus name |
-| IsActive | Is Active | Yes/No | Yes | Default: Yes |
+| Title | Name | Text | Yes | Employee full name |
+| SmartCardID | Smart Card ID | Text | Yes | Unique smart card identifier, indexed |
+| Email | Email | Text | Yes | Links smart card to identity, indexed |
 
 ### Indexes (Critical for Performance)
 
-1. **BadgeID** (CRITICAL for badge swipe lookup - must be < 2 seconds)
+1. **SmartCardID** (CRITICAL for smart card scan lookup -- must be < 2 seconds)
 2. **Email** (for user lookups)
 
-**Unique Constraint:** BadgeID must be unique (enforce in application logic)
+**Unique Constraint:** SmartCardID must be unique (enforce in application logic)
 
 ## Locations List Schema
 
-**Purpose:** Hierarchical location structure for package routing
+**Purpose:** Flat list of office locations for package routing
 
 **List Name:** `Locations`
 
@@ -106,38 +106,24 @@ PostHub uses 3 SharePoint lists:
 
 | Internal Name | Display Name | Type | Required | Description |
 |--------------|-------------|------|----------|-------------|
-| Title | Location Name | Single line of text | Yes | Display name (e.g., "Main Campus", "Room 101") |
-| Campus | Campus | Single line of text | No | Campus identifier |
-| Building | Building | Single line of text | No | Building identifier |
-| RoomArea | Room/Area | Single line of text | No | Room number or area name |
-| LocationType | Location Type | Single line of text | Yes | "Campus", "Building", "Mailroom", "Office", "Storage" |
-| ParentLocation | Parent Location | Lookup | No | Lookup to self (Locations list) for hierarchy |
-| IsActive | Is Active | Yes/No | Yes | Default: Yes |
-| FacilitiesContact | Facilities Contact | Person or Group | No | Responsible person |
-| SortOrder | Sort Order | Number | No | Custom ordering |
+| Title | Location Name | Text | Yes | Auto-formatted: "CITY \| OFFICE \| FLOOR" |
+| City | City | Text | Yes | City name (e.g. "LISBON", "PORTO") |
+| Office | Office | Text | Yes | Office/building name (e.g. "TOC", "URBO") |
+| Floor | Floor | Text | Yes | Floor number as string (e.g. "0", "1", "7") |
+| IsActive | Is Active | Text | Yes | "true" or "false" |
 
-### Indexes
-
-1. **IsActive** (for filtering active locations)
-2. **LocationType** (for filtering by type)
-
-### Hierarchy Structure
+### Available Locations (6 total)
 
 ```
-- Main Campus (Type: Campus, Parent: null)
-  - Building A (Type: Building, Parent: Main Campus)
-    - Mailroom A (Type: Mailroom, Parent: Building A)
-    - Room 101 (Type: Office, Parent: Building A)
-  - Building B (Type: Building, Parent: Main Campus)
-    - Mailroom B (Type: Mailroom, Parent: Building B)
+PORTO | URBO | 0
+LISBON | TOC | 1
+LISBON | TOR | 1
+LISBON | ECHO | 0
+LISBON | AURA | 7
+LISBON | LUMNIA | 0
 ```
 
-**Location Types:**
-- **Campus** -- top-level (e.g., "Main Campus", "West Campus")
-- **Building** -- within campus (e.g., "Building A")
-- **Mailroom** -- package processing area
-- **Office** -- individual room (e.g., "Room 101")
-- **Storage** -- storage area
+No hierarchy -- flat list. Location selection uses a ComboBox populated from this list.
 
 ## Data Access Patterns
 
@@ -145,21 +131,20 @@ PostHub uses 3 SharePoint lists:
 
 **Get user's packages (sender or recipient):**
 ```js
-import { ListApi } from '../utils/sharepoint.js'
+import { ListApi } from './libs/nofbiz/nofbiz.base.js'
 
 const packagesApi = new ListApi('Packages')
 
-// CAML query for user's packages
 const query = `
   <Where>
     <Or>
       <Eq>
-        <FieldRef Name='Sender' LookupId='TRUE'/>
-        <Value Type='User'>${currentUser.UID}</Value>
+        <FieldRef Name='Sender'/>
+        <Value Type='Text'>${currentUserEmail}</Value>
       </Eq>
       <Eq>
-        <FieldRef Name='Recipient' LookupId='TRUE'/>
-        <Value Type='User'>${currentUser.UID}</Value>
+        <FieldRef Name='Recipient'/>
+        <Value Type='Text'>${currentUserEmail}</Value>
       </Eq>
     </Or>
   </Where>
@@ -168,20 +153,19 @@ const query = `
 const packages = await packagesApi.getItems({ query })
 ```
 
-**Get package by tracking number (barcode scan):**
+**Get package by tracking number (QR scan):**
 ```js
-// Indexed query (fast)
 const query = `
   <Where>
     <Eq>
-      <FieldRef Name='TrackingNumber'/>
+      <FieldRef Name='Title'/>
       <Value Type='Text'>${trackingNumber}</Value>
     </Eq>
   </Where>
 `
 
 const packages = await packagesApi.getItems({ query })
-const package = packages[0]  // Should be unique
+const pkg = packages[0]  // Should be unique
 ```
 
 **Get pending packages (not delivered):**
@@ -190,7 +174,7 @@ const query = `
   <Where>
     <Neq>
       <FieldRef Name='Status'/>
-      <Value Type='Text'>Delivered</Value>
+      <Value Type='Text'>delivered</Value>
     </Neq>
   </Where>
 `
@@ -200,16 +184,15 @@ const packages = await packagesApi.getItems({ query })
 
 ### Employee Queries
 
-**Get employee by badge ID (badge swipe):**
+**Get employee by smart card ID (smart card scan):**
 ```js
 const employeesApi = new ListApi('Employees')
 
-// Indexed query (CRITICAL - must be fast)
 const query = `
   <Where>
     <Eq>
-      <FieldRef Name='BadgeID'/>
-      <Value Type='Text'>${badgeId}</Value>
+      <FieldRef Name='SmartCardID'/>
+      <Value Type='Text'>${smart cardId}</Value>
     </Eq>
   </Where>
 `
@@ -218,75 +201,46 @@ const employees = await employeesApi.getItems({ query })
 const employee = employees[0]  // Should be unique
 ```
 
-**Get employee by email:**
-```js
-const query = `
-  <Where>
-    <Eq>
-      <FieldRef Name='Email'/>
-      <Value Type='Text'>${email}</Value>
-    </Eq>
-  </Where>
-`
-
-const employees = await employeesApi.getItems({ query })
-```
-
 ### Location Queries
 
-**Get locations by type:**
+**Get active locations:**
 ```js
 const locationsApi = new ListApi('Locations')
 
-// Get all mailrooms
-const query = `
-  <Where>
-    <And>
-      <Eq>
-        <FieldRef Name='LocationType'/>
-        <Value Type='Text'>Mailroom</Value>
-      </Eq>
-      <Eq>
-        <FieldRef Name='IsActive'/>
-        <Value Type='Boolean'>1</Value>
-      </Eq>
-    </And>
-  </Where>
-`
-
-const mailrooms = await locationsApi.getItems({ query })
-```
-
-**Get child locations (by parent):**
-```js
 const query = `
   <Where>
     <Eq>
-      <FieldRef Name='ParentLocation' LookupId='TRUE'/>
-      <Value Type='Lookup'>${parentLocationId}</Value>
+      <FieldRef Name='IsActive'/>
+      <Value Type='Text'>true</Value>
     </Eq>
   </Where>
 `
 
-const childLocations = await locationsApi.getItems({ query })
+const locations = await locationsApi.getItems({ query })
 ```
+
+## SPARC Components for PostHub Data
+
+| Component | Use Case |
+|-----------|----------|
+| `ComboBox` | Location selection (`new ComboBox(field, locationTitles)`) |
+| `List` | Package tables (`new List({ headers, data, onItemSelectHandler })`) |
+| `FieldLabel` | Form labels (`new FieldLabel('Recipient', input)`) |
+| `FormSchema` | Form validation (`schema.isValid`, `schema.parse()`) |
+| `PeoplePicker` | Future recipient search (auto-searches AD) |
 
 ## Data Validation with Zod
 
 **Package creation validation:**
 ```js
 const packageSchema = __zod.object({
-  Title: __zod.string().min(1, 'Description is required'),
   Recipient: __zod.string().min(1, 'Recipient is required'),
-  Priority: __zod.enum(['Standard', 'Urgent', 'Low']),
-  DestinationLocation: __zod.number().positive('Destination is required'),
+  DestinationLocation: __zod.string().min(1, 'Destination is required'),
   PackageDetails: __zod.string().optional()
 })
 
-// Validate before creating
 const result = packageSchema.safeParse(formData)
 if (!result.success) {
-  // Show validation errors
   Toast.error(result.error.errors[0].message)
   return
 }
@@ -305,42 +259,32 @@ export function generateTrackingNumber() {
 }
 ```
 
-**Example:** `POSTHUB-20251203-00001`
-
 ## Status Update with Timeline
 
 **Always include location:**
 ```js
-export async function updatePackageStatus(packageId, newStatus, locationId, notes) {
-  if (!locationId) {
+export async function updatePackageStatus(packageId, newStatus, location, notes) {
+  if (!location) {
     throw new Error('Location is required for status update')
   }
 
   const packagesApi = new ListApi('Packages')
   const pkg = await packagesApi.getItemByUUID(packageId)
 
-  // Parse existing timeline
   const timeline = pkg.Timeline ? JSON.parse(pkg.Timeline) : []
 
-  // Get location details
-  const locationsApi = new ListApi('Locations')
-  const location = await locationsApi.getItemByUUID(locationId)
-
-  // Add new entry
   timeline.push({
     status: newStatus,
     date: new Date().toISOString(),
-    location: location.Title,
-    locationId: locationId,
+    location: location,
     changedBy: currentUser.Email,
     notes: notes || ''
   })
 
-  // Update package
   await packagesApi.createItem({
     ID: packageId,
     Status: newStatus,
-    CurrentLocation: locationId,
+    CurrentLocation: location,
     Timeline: JSON.stringify(timeline)
   })
 }
@@ -349,11 +293,5 @@ export async function updatePackageStatus(packageId, newStatus, locationId, note
 ## Reference
 
 Extracted from:
-- `IMPLEMENTATION_PLAN.md` lines 54-183 (SharePoint Lists Schema)
-- `IMPLEMENTATION_PLAN.md` lines 190-210 (utils/sharepoint.js)
-- `SHAREPOINT_SETUP_GUIDE.md` (complete list setup instructions)
-
-For complete context, see:
-- `IMPLEMENTATION_PLAN.md`
-- `SHAREPOINT_SETUP_GUIDE.md`
-- `sharepoint-data/README.md`
+- `requirements-review.md` (updated requirements)
+- `IMPLEMENTATION_PLAN.md` (architectural decisions)

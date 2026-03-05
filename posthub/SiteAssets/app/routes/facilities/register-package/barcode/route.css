@@ -1,0 +1,174 @@
+/* ===================================
+   BARCODE PAGE
+   =================================== */
+
+/* Page Content - Centered */
+.barcode__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px);
+  background: #f5f5f0;
+  gap: 32px;
+  padding: 40px 20px;
+  position: relative;
+}
+
+/* Back Button */
+.barcode__back-btn {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  color: #4caf50;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.barcode__back-btn:hover {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  transform: translateX(-2px);
+}
+
+/* QR Code Container */
+.barcode__qr-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+#qrcode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#qrcode img {
+  display: block;
+  border-radius: 8px;
+}
+
+/* Package ID */
+.barcode__package-id {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: monospace;
+  color: #333333;
+  margin: 0;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+/* Print Button */
+.barcode__print-btn {
+  padding: 16px 48px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #4caf50;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.barcode__print-btn:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    size: 4in 6in;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide elements not needed for print */
+  .no-print,
+  .navbar {
+    display: none !important;
+  }
+
+  /* Format content for label */
+  .barcode__content {
+    min-height: 6in;
+    width: 4in;
+    margin: 0;
+    padding: 0.5in;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .barcode__qr-container {
+    padding: 16px;
+    box-shadow: none;
+    border: 2px solid #333333;
+  }
+
+  #qrcode img {
+    width: 2.5in !important;
+    height: 2.5in !important;
+  }
+
+  .barcode__package-id {
+    font-size: 24pt;
+    page-break-inside: avoid;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .barcode__content {
+    gap: 24px;
+    padding: 32px 16px;
+  }
+
+  .barcode__back-btn {
+    top: 20px;
+    left: 20px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .barcode__qr-container {
+    padding: 16px;
+  }
+
+  #qrcode img {
+    max-width: 200px;
+    max-height: 200px;
+  }
+
+  .barcode__package-id {
+    font-size: 24px;
+  }
+}

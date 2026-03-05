@@ -1,8 +1,10 @@
 # PostHub - SharePoint Setup Guide
 
-This comprehensive guide will walk you through setting up all SharePoint lists, groups, and permissions for the PostHub mail management system. All steps are performed through the SharePoint web interface (no PowerShell required).
+This guide walks you through setting up all SharePoint lists, groups, and permissions for the PostHub mail management system. All steps are performed through the SharePoint web interface (no PowerShell required).
 
-**Estimated Setup Time**: 60-90 minutes
+> **Note:** SPARC's `createField` only supports **Text** and **Note** (multiline text) field types. All columns in PostHub lists use these two types exclusively -- no Lookup, Person/Group, Yes/No, Number, or Choice columns.
+
+**Estimated Setup Time**: 30-45 minutes
 
 ---
 
@@ -11,7 +13,7 @@ This comprehensive guide will walk you through setting up all SharePoint lists, 
 1. [Part 1: SharePoint Groups Setup](#part-1-sharepoint-groups-setup)
 2. [Part 2: List Creation Instructions](#part-2-list-creation-instructions)
    - [2.1 Locations List](#21-locations-list)
-   - [2.2 Employees List (Update Existing)](#22-employees-list-update-existing)
+   - [2.2 Employees List](#22-employees-list)
    - [2.3 Packages List](#23-packages-list)
 3. [Part 3: Importing Sample Data](#part-3-importing-sample-data)
 4. [Part 4: Verification Checklist](#part-4-verification-checklist)
@@ -26,10 +28,10 @@ SharePoint groups control who can access different parts of the PostHub applicat
 ### Step 1.1: Create SharePoint Groups
 
 1. Navigate to your SharePoint site
-2. Click the **Settings** gear icon (top right) → **Site Settings**
+2. Click the **Settings** gear icon (top right) -> **Site Settings**
 3. Under **Users and Permissions**, click **People and groups**
-4. Click **More** → **Groups** in the left navigation
-5. Click **New** → **New Group**
+4. Click **More** -> **Groups** in the left navigation
+5. Click **New** -> **New Group**
 
 #### Group 1: RegularUser
 
@@ -39,7 +41,7 @@ SharePoint groups control who can access different parts of the PostHub applicat
    - **Who can view the membership**: Group Members
    - **Who can edit the membership**: Group Owner
 4. **Membership Requests**:
-   - ☑ Allow requests to join/leave this group
+   - Allow requests to join/leave this group: Yes
    - Auto-accept requests: No
 5. **Give Group Permission to this Site**:
    - Select: **Read** (View pages and items)
@@ -47,14 +49,14 @@ SharePoint groups control who can access different parts of the PostHub applicat
 
 #### Group 2: FacilitiesEmployee
 
-1. Click **New** → **New Group** (repeat process)
+1. Click **New** -> **New Group** (repeat process)
 2. **Name**: `FacilitiesEmployee`
 3. **About Me (Description)**: `Facilities staff who process, scan, and route packages`
 4. **Group Settings**:
    - **Who can view the membership**: Group Members
    - **Who can edit the membership**: Group Owner
 5. **Membership Requests**:
-   - ☑ Allow requests to join/leave this group
+   - Allow requests to join/leave this group: Yes
    - Auto-accept requests: No
 6. **Give Group Permission to this Site**:
    - Select: **Contribute** (Add, edit, delete list items)
@@ -62,14 +64,14 @@ SharePoint groups control who can access different parts of the PostHub applicat
 
 #### Group 3: FacilitiesManager
 
-1. Click **New** → **New Group** (repeat process)
+1. Click **New** -> **New Group** (repeat process)
 2. **Name**: `FacilitiesManager`
 3. **About Me (Description)**: `Facilities managers with admin access to locations and reports`
 4. **Group Settings**:
    - **Who can view the membership**: Group Members
    - **Who can edit the membership**: Group Owner
 5. **Membership Requests**:
-   - ☑ Allow requests to join/leave this group
+   - Allow requests to join/leave this group: Yes
    - Auto-accept requests: No
 6. **Give Group Permission to this Site**:
    - Select: **Full Control** (Has full control)
@@ -78,7 +80,7 @@ SharePoint groups control who can access different parts of the PostHub applicat
 ### Step 1.2: Add Users to Groups
 
 1. Click on the group name (e.g., `RegularUser`)
-2. Click **New** → **Add Users to this Group**
+2. Click **New** -> **Add Users to this Group**
 3. Enter user names or email addresses in the text box
 4. Click **Share**
 5. Repeat for all three groups
@@ -91,72 +93,57 @@ SharePoint groups control who can access different parts of the PostHub applicat
 
 ### Step 1.3: Verify Group Creation
 
-✅ **Checklist**:
+**Checklist**:
 - [ ] RegularUser group created with Read permissions
 - [ ] FacilitiesEmployee group created with Contribute permissions
 - [ ] FacilitiesManager group created with Full Control permissions
 - [ ] Test users added to appropriate groups
-- [ ] You can see all three groups in **Site Settings** → **People and groups**
+- [ ] You can see all three groups in **Site Settings** -> **People and groups**
 
 ---
 
 ## Part 2: List Creation Instructions
 
-You'll create 4 SharePoint lists. **Create them in this order** (due to lookup dependencies):
+You'll create 3 SharePoint lists. **Create them in any order** (no lookup dependencies).
 
-1. **Locations** (first - no dependencies)
-2. **Employees** (second - needs Locations)
-3. **Packages** (third - needs Locations and Employees)
+1. **Locations** (flat structure with City/Office/Floor)
+2. **Employees** (minimal: Name, SmartCardID, Email)
+3. **Packages** (text-based sender/recipient and locations)
 
-**Note**: PostHub uses an embedded Timeline field in the Packages list (JSON array) instead of a separate PackageHistory list for better performance and simpler queries.
+All columns use only **Text** (Single line of text) or **Note** (Multiple lines of text) types, which are the two types supported by SPARC's `createField`.
 
 ---
 
 ## 2.1 Locations List
 
-The Locations list stores hierarchical location data (Campus → Building → Room) for package routing.
+The Locations list stores a flat list of office locations used for package routing. Each location is identified by a `CITY | OFFICE | FLOOR` title.
 
 ### Step 2.1.1: Create the List
 
 1. Navigate to your SharePoint site
-2. Click **Settings** gear → **Add an app**
+2. Click **Settings** gear -> **Add an app**
 3. Click **Custom List**
 4. **Name**: `Locations`
 5. Click **Create**
 
 ### Step 2.1.2: Add Columns
 
-After the list is created, you'll add 8 custom columns. For each column:
+After the list is created, add 4 custom columns. For each column:
 
 1. Open the **Locations** list
-2. Click **Settings** gear → **List Settings**
+2. Click **Settings** gear -> **List Settings**
 3. Under **Columns**, click **Create column**
 4. Follow the specifications below
 
 ---
 
-#### Column 1: Campus
+#### Column 1: City
 
 | Setting | Value |
 |---------|-------|
-| **Column name** | `Campus` |
+| **Column name** | `City` |
 | **Type** | Single line of text |
-| **Description** | Campus identifier (e.g., Main Campus, North Campus) |
-| **Require information** | No |
-| **Enforce unique values** | No |
-| **Maximum characters** | 255 |
-
-Click **OK**
-
----
-
-#### Column 2: Building
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Building` |
-| **Type** | Single line of text |
-| **Description** | Building identifier (e.g., Building A, Admin Building) |
+| **Description** | City name (e.g., LISBON, PORTO) |
 | **Require information** | No |
 | **Maximum characters** | 255 |
 
@@ -164,13 +151,13 @@ Click **OK**
 
 ---
 
-#### Column 3: RoomArea
+#### Column 2: Office
 
 | Setting | Value |
 |---------|-------|
-| **Column name** | `RoomArea` |
+| **Column name** | `Office` |
 | **Type** | Single line of text |
-| **Description** | Room number or area name (e.g., Room 101, Mailroom) |
+| **Description** | Office name (e.g., TOC, URBO, ECHO) |
 | **Require information** | No |
 | **Maximum characters** | 255 |
 
@@ -178,81 +165,30 @@ Click **OK**
 
 ---
 
-#### Column 4: LocationType
+#### Column 3: Floor
 
 | Setting | Value |
 |---------|-------|
-| **Column name** | `LocationType` |
+| **Column name** | `Floor` |
 | **Type** | Single line of text |
-| **Description** | Type of location for filtering |
-| **Require information** | Yes |
-| **Maximum characters** | 100 |
-
-Click **OK**
-
-💡 **Tip**: Valid values are: `Campus`, `Building`, `Mailroom`, `Office`, `Storage`
-
----
-
-#### Column 5: ParentLocation
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `ParentLocation` |
-| **Type** | Lookup |
-| **Description** | Parent location for hierarchical structure |
+| **Description** | Floor number (e.g., 0, 1, 7) |
 | **Require information** | No |
-| **Get information from** | Locations (same list) |
-| **In this column** | Title |
-| **Allow multiple values** | No |
+| **Maximum characters** | 50 |
 
 Click **OK**
 
-⚠️ **Important**: This creates a self-referencing lookup for the hierarchy.
-
 ---
 
-#### Column 6: IsActive
+#### Column 4: IsActive
 
 | Setting | Value |
 |---------|-------|
 | **Column name** | `IsActive` |
-| **Type** | Yes/No (check box) |
-| **Description** | Whether this location is currently active |
-| **Default value** | Yes |
-
-Click **OK**
-
----
-
-#### Column 7: FacilitiesContact
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `FacilitiesContact` |
-| **Type** | Person or Group |
-| **Description** | Responsible facilities person for this location |
+| **Type** | Single line of text |
+| **Description** | Whether this location is currently active ("true" or "false") |
 | **Require information** | No |
-| **Allow multiple selections** | No |
-| **Allow selection of** | People Only |
-| **Choose from** | All Users |
-
-Click **OK**
-
----
-
-#### Column 8: SortOrder
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `SortOrder` |
-| **Type** | Number |
-| **Description** | Custom sort order for displaying locations |
-| **Require information** | No |
-| **Min** | 0 |
-| **Max** | (leave blank) |
-| **Decimal places** | 0 |
-| **Default value** | 0 |
+| **Default value** | true |
+| **Maximum characters** | 10 |
 
 Click **OK**
 
@@ -271,172 +207,84 @@ Indexes improve query performance for frequently filtered columns.
 5. **Secondary Column**: None
 6. Click **Create**
 
-#### Index 2: LocationType
-
-1. Click **Create a new index** (again)
-2. **Primary Column**: Select `LocationType`
-3. **Secondary Column**: None
-4. Click **Create**
-
 ### Step 2.1.4: Verify Locations List
 
-✅ **Checklist**:
+**Checklist**:
 - [ ] List named "Locations" exists
-- [ ] Title column (default)
-- [ ] Campus column (text)
-- [ ] Building column (text)
-- [ ] RoomArea column (text)
-- [ ] LocationType column (text, required)
-- [ ] ParentLocation column (lookup to Locations)
-- [ ] IsActive column (yes/no, default Yes)
-- [ ] FacilitiesContact column (person)
-- [ ] SortOrder column (number)
-- [ ] Indexed columns: IsActive, LocationType
+- [ ] Title column (default -- formatted as "CITY | OFFICE | FLOOR")
+- [ ] City column (text)
+- [ ] Office column (text)
+- [ ] Floor column (text)
+- [ ] IsActive column (text, default "true")
+- [ ] Indexed columns: IsActive
 
-**Total Columns**: 9 (including Title)
+**Total Columns**: 5 (including Title)
 
 ---
 
-## 2.2 Employees List (Update Existing)
+## 2.2 Employees List
 
-The Employees list already exists with basic columns. You'll add 6 new columns for PostHub functionality.
+The Employees list stores employee records with smart card IDs for the smart card scan workflow.
 
-### Step 2.2.1: Open Existing List
+### Step 2.2.1: Create the List
 
 1. Navigate to your SharePoint site
-2. Click **Site Contents**
-3. Click on the **Employees** list
+2. Click **Settings** gear -> **Add an app**
+3. Click **Custom List**
+4. **Name**: `Employees`
+5. Click **Create**
 
-⚠️ **Note**: If the Employees list doesn't exist, create a new Custom List named "Employees" first.
+If the list already exists, open it and remove any columns that are not listed below.
 
-### Step 2.2.2: Verify Existing Columns
+### Step 2.2.2: Add Columns
 
-Your Employees list should already have:
-- **Name** (Single line of text)
-- **Email** (Single line of text)
-- **Department** (Single line of text)
-
-If these don't exist, create them as Single line of text columns.
-
-### Step 2.2.3: Add New Columns
-
-Follow these steps for each new column:
-
-1. Click **Settings** gear → **List Settings**
-2. Under **Columns**, click **Create column**
-3. Follow specifications below
+The Employees list only needs 2 custom columns beyond the default Title (which serves as the employee name).
 
 ---
 
-#### Column 1: BadgeID
+#### Column 1: SmartCardID
 
 | Setting | Value |
 |---------|-------|
-| **Column name** | `BadgeID` |
+| **Column name** | `SmartCardID` |
 | **Type** | Single line of text |
-| **Description** | Unique employee badge identifier (used for badge swipe lookup) |
+| **Description** | Unique employee smart card identifier (used for smart card scan lookup) |
 | **Require information** | Yes |
 | **Enforce unique values** | Yes |
 | **Maximum characters** | 50 |
 
 Click **OK**
 
-⚠️ **Critical**: This column MUST have unique values enabled and be indexed!
+CRITICAL: This column MUST have unique values enabled and be indexed.
 
 ---
 
-#### Column 2: OfficeLocation
+#### Column 2: Email
 
 | Setting | Value |
 |---------|-------|
-| **Column name** | `OfficeLocation` |
-| **Type** | Lookup |
-| **Description** | Employee's primary office location |
-| **Require information** | No |
-| **Get information from** | Locations |
-| **In this column** | Title |
-| **Allow multiple values** | No |
-
-Click **OK**
-
-⚠️ **CRITICAL**: While not technically required by SharePoint, **every employee MUST have an OfficeLocation assigned** for the PostHub application to function properly. This location is used for:
-- Initial package creation (sender's office location)
-- Facilities staff operations (current location for status updates)
-- Complete audit trail tracking
-
-Without OfficeLocation, users will encounter errors when creating packages or updating package status.
-
----
-
-#### Column 3: Manager
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Manager` |
-| **Type** | Person or Group |
-| **Description** | Employee's direct manager |
-| **Require information** | No |
-| **Allow multiple selections** | No |
-| **Allow selection of** | People Only |
-| **Choose from** | All Users |
-
-Click **OK**
-
----
-
-#### Column 4: Building
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Building` |
+| **Column name** | `Email` |
 | **Type** | Single line of text |
-| **Description** | Building name for package routing |
-| **Require information** | No |
-| **Maximum characters** | 100 |
+| **Description** | Employee email address |
+| **Require information** | Yes |
+| **Maximum characters** | 255 |
 
 Click **OK**
 
 ---
 
-#### Column 5: Campus
+### Step 2.2.3: Create Indexed Columns
 
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Campus` |
-| **Type** | Single line of text |
-| **Description** | Campus name for package routing |
-| **Require information** | No |
-| **Maximum characters** | 100 |
-
-Click **OK**
-
----
-
-#### Column 6: IsActive
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `IsActive` |
-| **Type** | Yes/No (check box) |
-| **Description** | Whether this employee is currently active |
-| **Default value** | Yes |
-
-Click **OK**
-
----
-
-### Step 2.2.4: Create Indexed Columns
-
-#### Index 1: BadgeID (CRITICAL!)
+#### Index 1: SmartCardID (CRITICAL)
 
 1. Go to **List Settings**
 2. Under **Columns**, click **Indexed columns**
 3. Click **Create a new index**
-4. **Primary Column**: Select `BadgeID`
+4. **Primary Column**: Select `SmartCardID`
 5. **Secondary Column**: None
 6. Click **Create**
 
-⚠️ **Critical**: This index is essential for fast badge lookup!
+CRITICAL: This index is essential for fast smart card lookup (must complete in < 2 seconds).
 
 #### Index 2: Email
 
@@ -445,109 +293,67 @@ Click **OK**
 3. **Secondary Column**: None
 4. Click **Create**
 
-### Step 2.2.5: Verify Employees List
+### Step 2.2.4: Verify Employees List
 
-✅ **Checklist**:
-- [ ] Name column (text)
-- [ ] Email column (text)
-- [ ] Department column (text)
-- [ ] BadgeID column (text, required, unique, indexed)
-- [ ] OfficeLocation column (lookup to Locations)
-- [ ] Manager column (person)
-- [ ] Building column (text)
-- [ ] Campus column (text)
-- [ ] IsActive column (yes/no, default Yes)
-- [ ] Indexed columns: BadgeID, Email
+**Checklist**:
+- [ ] Title column (default -- employee name)
+- [ ] SmartCardID column (text, required, unique, indexed)
+- [ ] Email column (text, required, indexed)
+- [ ] Indexed columns: SmartCardID, Email
 
-**Total Columns**: 9 (including Title if present)
+**Total Columns**: 3 (including Title)
 
 ---
 
 ## 2.3 Packages List
 
-The Packages list is the core data store for all mail/package records.
+The Packages list is the core data store for all mail/package records. The Title column stores the tracking number.
 
 ### Step 2.3.1: Create the List
 
 1. Navigate to your SharePoint site
-2. Click **Settings** gear → **Add an app**
+2. Click **Settings** gear -> **Add an app**
 3. Click **Custom List**
 4. **Name**: `Packages`
 5. Click **Create**
 
 ### Step 2.3.2: Add Columns
 
-You'll add 11 custom columns (Title column already exists by default).
+You'll add 8 custom columns. The default Title column is used as the TrackingNumber.
+
+> **Title column**: Rename the default Title column to "TrackingNumber" for clarity. Go to **List Settings** -> click **Title** column -> change **Column name** to `Title` (keep as-is) or just use it as the tracking number field. The internal name remains `Title`.
 
 ---
 
-#### Column 1: TrackingNumber
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `TrackingNumber` |
-| **Type** | Single line of text |
-| **Description** | Unique barcode tracking identifier (auto-generated: POSTHUB-YYYYMMDD-XXXXX) |
-| **Require information** | Yes |
-| **Enforce unique values** | Yes |
-| **Maximum characters** | 50 |
-
-Click **OK**
-
-⚠️ **Critical**: Must be unique and indexed!
-
----
-
-#### Column 2: Sender
+#### Column 1: Sender
 
 | Setting | Value |
 |---------|-------|
 | **Column name** | `Sender` |
-| **Type** | Person or Group |
-| **Description** | Package sender (auto-populated from current user) |
+| **Type** | Single line of text |
+| **Description** | Sender email address |
 | **Require information** | Yes |
-| **Allow multiple selections** | No |
-| **Allow selection of** | People Only |
-| **Choose from** | All Users |
+| **Maximum characters** | 255 |
 
 Click **OK**
 
 ---
 
-#### Column 3: Recipient
+#### Column 2: Recipient
 
 | Setting | Value |
 |---------|-------|
 | **Column name** | `Recipient` |
-| **Type** | Person or Group |
-| **Description** | Package recipient |
-| **Require information** | Yes |
-| **Allow multiple selections** | No |
-| **Allow selection of** | People Only |
-| **Choose from** | All Users |
-
-Click **OK**
-
----
-
-#### Column 4: Priority
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Priority` |
 | **Type** | Single line of text |
-| **Description** | Package priority level |
-| **Require information** | No |
-| **Maximum characters** | 50 |
-| **Default value** | Standard |
+| **Description** | Recipient email address |
+| **Require information** | Yes |
+| **Maximum characters** | 255 |
 
 Click **OK**
 
-💡 **Tip**: Valid values are: `Standard`, `Urgent`, `Low`
-
 ---
 
-#### Column 5: Status
+#### Column 3: Status
 
 | Setting | Value |
 |---------|-------|
@@ -556,73 +362,43 @@ Click **OK**
 | **Description** | Current package status |
 | **Require information** | Yes |
 | **Maximum characters** | 50 |
-| **Default value** | Sent |
+| **Default value** | created |
 
 Click **OK**
 
-💡 **Tip**: Valid values are: `Sent`, `Received`, `Stored`, `In Transit`, `Arrived`, `Delivered`
+Valid values: `created`, `stored`, `in transit`, `arrived`, `delivered`
 
 ---
 
-#### Column 6: Timeline
-
-| Setting | Value |
-|---------|-------|
-| **Column name** | `Timeline` |
-| **Type** | Multiple lines of text |
-| **Description** | JSON array of status change history |
-| **Require information** | No |
-| **Number of lines** | 10 |
-| **Type of text** | Plain text |
-| **Append Changes to Existing Text** | No |
-
-Click **OK**
-
-💡 **Important**: This field stores a JSON array tracking all status changes:
-```json
-[
-  {"status":"Sent","date":"2025-12-03T10:00:00Z","changedBy":"user@company.com","notes":"Package created"},
-  {"status":"Received","date":"2025-12-03T14:30:00Z","changedBy":"staff@company.com","location":"Mailroom A","notes":"Label printed"}
-]
-```
-
-This eliminates the need for a separate PackageHistory list and improves query performance.
-
----
-
-#### Column 7: CurrentLocation
+#### Column 4: CurrentLocation
 
 | Setting | Value |
 |---------|-------|
 | **Column name** | `CurrentLocation` |
-| **Type** | Lookup |
-| **Description** | Current location of the package |
+| **Type** | Single line of text |
+| **Description** | Current location of the package (e.g., "LISBON | TOC | 1") |
 | **Require information** | No |
-| **Get information from** | Locations |
-| **In this column** | Title |
-| **Allow multiple values** | No |
+| **Maximum characters** | 255 |
 
 Click **OK**
 
 ---
 
-#### Column 7: DestinationLocation
+#### Column 5: DestinationLocation
 
 | Setting | Value |
 |---------|-------|
 | **Column name** | `DestinationLocation` |
-| **Type** | Lookup |
-| **Description** | Final destination location for the package |
+| **Type** | Single line of text |
+| **Description** | Final destination location (e.g., "LISBON | TOR | 1") |
 | **Require information** | No |
-| **Get information from** | Locations |
-| **In this column** | Title |
-| **Allow multiple values** | No |
+| **Maximum characters** | 255 |
 
 Click **OK**
 
 ---
 
-#### Column 8: PackageDetails
+#### Column 6: PackageDetails
 
 | Setting | Value |
 |---------|-------|
@@ -637,13 +413,13 @@ Click **OK**
 
 ---
 
-#### Column 9: Notes
+#### Column 7: InternalNotes
 
 | Setting | Value |
 |---------|-------|
-| **Column name** | `Notes` |
+| **Column name** | `InternalNotes` |
 | **Type** | Multiple lines of text |
-| **Description** | General notes and comments |
+| **Description** | Internal notes visible only to facilities staff |
 | **Require information** | No |
 | **Number of lines** | 4 |
 | **Type of text** | Plain text |
@@ -652,57 +428,60 @@ Click **OK**
 
 ---
 
+#### Column 8: Timeline
+
+| Setting | Value |
+|---------|-------|
+| **Column name** | `Timeline` |
+| **Type** | Multiple lines of text |
+| **Description** | JSON array of status change history |
+| **Require information** | No |
+| **Number of lines** | 10 |
+| **Type of text** | Plain text |
+| **Append Changes to Existing Text** | No |
+
+Click **OK**
+
+This field stores a JSON array tracking all status changes:
+```json
+[
+  {"status":"created","date":"2025-12-03T10:00:00Z","location":"LISBON | TOC | 1","changedBy":"user@company.com","notes":"Package created"},
+  {"status":"stored","date":"2025-12-03T14:30:00Z","location":"LISBON | TOC | 1","changedBy":"staff@company.com","notes":"Label printed"}
+]
+```
+
+---
+
 ### Step 2.3.3: Create Indexed Columns
 
-#### Index 1: TrackingNumber
+#### Index 1: Status
 
 1. Go to **List Settings**
 2. Under **Columns**, click **Indexed columns**
 3. Click **Create a new index**
-4. **Primary Column**: Select `TrackingNumber`
+4. **Primary Column**: Select `Status`
 5. **Secondary Column**: None
 6. Click **Create**
 
-#### Index 2: Status
-
-1. Click **Create a new index**
-2. **Primary Column**: Select `Status`
-3. **Secondary Column**: None
-4. Click **Create**
-
-#### Index 3: Sender
-
-1. Click **Create a new index**
-2. **Primary Column**: Select `Sender`
-3. **Secondary Column**: None
-4. Click **Create**
-
-#### Index 4: Recipient
-
-1. Click **Create a new index**
-2. **Primary Column**: Select `Recipient`
-3. **Secondary Column**: None
-4. Click **Create**
+Note: The Title column (TrackingNumber) is automatically indexed by SharePoint since it enforces uniqueness when configured.
 
 ### Step 2.3.4: Verify Packages List
 
-✅ **Checklist**:
-- [ ] Title column (default - Package Description)
-- [ ] TrackingNumber column (text, required, unique, indexed)
-- [ ] Sender column (person, required, indexed)
-- [ ] Recipient column (person, required, indexed)
-- [ ] Priority column (text)
+**Checklist**:
+- [ ] Title column (default -- used as TrackingNumber, format: POSTHUB-YYYYMMDD-XXXXX)
+- [ ] Sender column (text, required -- email string)
+- [ ] Recipient column (text, required -- email string)
 - [ ] Status column (text, required, indexed)
-- [ ] Timeline column (multi-line text, JSON array for audit trail)
-- [ ] CurrentLocation column (lookup to Locations)
-- [ ] DestinationLocation column (lookup to Locations)
+- [ ] CurrentLocation column (text -- location string)
+- [ ] DestinationLocation column (text -- location string)
 - [ ] PackageDetails column (multi-line text)
-- [ ] Notes column (multi-line text)
+- [ ] InternalNotes column (multi-line text)
+- [ ] Timeline column (multi-line text, JSON array for audit trail)
 - [ ] Created column (auto, default)
 - [ ] Modified column (auto, default)
-- [ ] Indexed columns: TrackingNumber, Status, Sender, Recipient
+- [ ] Indexed columns: Status
 
-**Total Columns**: 13 (including Title, Created, Modified)
+**Total Columns**: 9 custom + Title + Created + Modified = 11
 
 ---
 
@@ -718,23 +497,17 @@ CSV files with sample data are provided in the `sharepoint-data` folder.
 4. Click **Stop** (exit Quick Edit mode)
 5. Verify data appears correctly
 
-💡 **Tip**: Import top-level locations first (Campus), then Buildings, then Rooms. The ParentLocation lookup requires parent items to exist first.
+There are 6 locations representing real office sites. No hierarchy or parent dependencies -- just paste all rows at once.
 
-**Alternative Method**:
-1. Open the Locations list
-2. Click **New** for each location
-3. Fill in the form manually
-4. Set ParentLocation using the lookup dropdown
-
-### Step 3.2: Import Employee Badge IDs
+### Step 3.2: Import Employee Smart Card IDs
 
 1. Open the **Employees** list
 2. Click **Quick Edit**
 3. Copy data from `Employees_Sample.csv` and paste
 4. Click **Stop**
-5. Verify BadgeID values are unique
+5. Verify SmartCardID values are unique
 
-⚠️ **Important**: Ensure each employee has a unique BadgeID.
+IMPORTANT: Ensure each employee has a unique SmartCardID.
 
 ### Step 3.3: Import Sample Packages (Optional)
 
@@ -743,7 +516,7 @@ CSV files with sample data are provided in the `sharepoint-data` folder.
 3. Copy data from `Packages_Sample.csv` and paste
 4. Click **Stop**
 
-💡 **Tip**: You can skip this and create packages through the PostHub application.
+You can skip this and create packages through the PostHub application instead.
 
 ---
 
@@ -751,38 +524,27 @@ CSV files with sample data are provided in the `sharepoint-data` folder.
 
 ### Step 4.1: List Structure Verification
 
-✅ **All 4 Lists Created**:
-- [ ] Locations list (9 columns)
-- [ ] Employees list (9 columns)
-- [ ] Packages list (12 columns)
-- [ ] PackageHistory list (9 columns)
+**All 3 Lists Created**:
+- [ ] Locations list (5 columns)
+- [ ] Employees list (3 columns)
+- [ ] Packages list (11 columns including auto columns)
 
-✅ **All Indexes Created**:
-- [ ] Locations: IsActive, LocationType
-- [ ] Employees: BadgeID, Email
-- [ ] Packages: TrackingNumber, Status, Sender, Recipient
-- [ ] PackageHistory: PackageID, Timestamp
-
-✅ **All Lookups Working**:
-- [ ] Locations.ParentLocation → Locations.Title
-- [ ] Employees.OfficeLocation → Locations.Title
-- [ ] Packages.CurrentLocation → Locations.Title
-- [ ] Packages.DestinationLocation → Locations.Title
-- [ ] PackageHistory.PackageID → Packages.Title
-- [ ] PackageHistory.Location → Locations.Title
+**All Indexes Created**:
+- [ ] Locations: IsActive
+- [ ] Employees: SmartCardID, Email
+- [ ] Packages: Status
 
 ### Step 4.2: Sample Data Verification
 
-✅ **Test Data Present**:
-- [ ] Locations list has 10+ locations with hierarchy
-- [ ] Employees list has 5+ employees with BadgeIDs
-- [ ] Each location has LocationType set
-- [ ] Each employee has unique BadgeID
-- [ ] At least one campus, building, and room location exists
+**Test Data Present**:
+- [ ] Locations list has 6 locations
+- [ ] Employees list has 10 employees with SmartCardIDs
+- [ ] Each employee has a unique SmartCardID
+- [ ] Location titles follow "CITY | OFFICE | FLOOR" format
 
 ### Step 4.3: Permissions Verification
 
-✅ **SharePoint Groups**:
+**SharePoint Groups**:
 - [ ] RegularUser group exists (Read permissions)
 - [ ] FacilitiesEmployee group exists (Contribute permissions)
 - [ ] FacilitiesManager group exists (Full Control permissions)
@@ -792,44 +554,26 @@ CSV files with sample data are provided in the `sharepoint-data` folder.
 
 Run these manual tests to verify setup:
 
-#### Test 1: Badge Lookup
+#### Test 1: Smart Card Lookup
 1. Open Employees list
-2. Filter by BadgeID (pick any badge from sample data)
+2. Filter by SmartCardID (pick any smart card ID from sample data)
 3. Verify only one result appears (enforcing uniqueness)
 
-#### Test 2: Location Hierarchy
+#### Test 2: Active Locations
 1. Open Locations list
-2. Find a room-level location
-3. Check ParentLocation shows correct building
-4. Find that building
-5. Check ParentLocation shows correct campus
-
-#### Test 3: Active Locations
-1. Open Locations list
-2. Filter by IsActive = Yes
+2. Filter by IsActive = "true"
 3. Verify only active locations appear
 
-#### Test 4: Tracking Number Uniqueness
+#### Test 3: Tracking Number Uniqueness
 1. Open Packages list
-2. Try to create two packages with same TrackingNumber
+2. Try to create two packages with same Title (TrackingNumber)
 3. Verify SharePoint prevents duplicate (should show error)
 
 ---
 
 ## Troubleshooting
 
-### Issue 1: Cannot Create Lookup Column
-
-**Symptom**: The target list doesn't appear in the "Get information from" dropdown
-
-**Solution**:
-- Ensure the target list exists first (create Locations before Packages)
-- Refresh the page and try again
-- Check you have permissions to access the target list
-
----
-
-### Issue 2: Cannot Enforce Unique Values
+### Issue 1: Cannot Enforce Unique Values
 
 **Symptom**: "Enforce unique values" option is grayed out
 
@@ -839,29 +583,18 @@ Run these manual tests to verify setup:
 
 ---
 
-### Issue 3: Badge Lookup is Slow
+### Issue 2: Smart Card Lookup is Slow
 
-**Symptom**: Searching employees by BadgeID takes several seconds
+**Symptom**: Searching employees by SmartCardID takes several seconds
 
 **Solution**:
-- Verify BadgeID column is indexed (List Settings → Indexed columns)
+- Verify SmartCardID column is indexed (List Settings -> Indexed columns)
 - If not indexed, create the index now
 - Index must be in place BEFORE adding large amounts of data
 
 ---
 
-### Issue 4: Lookup Shows Wrong Column
-
-**Symptom**: ParentLocation shows ID instead of Title
-
-**Solution**:
-- Edit the ParentLocation column (List Settings → ParentLocation → Column Settings)
-- Change "In this column" to "Title"
-- Click OK
-
----
-
-### Issue 5: Cannot Import CSV Data
+### Issue 3: Cannot Import CSV Data
 
 **Symptom**: Quick Edit paste doesn't work
 
@@ -873,63 +606,39 @@ Run these manual tests to verify setup:
 
 ---
 
-### Issue 6: Person/Group Columns Not Resolving
-
-**Symptom**: Names don't auto-complete or resolve correctly
-
-**Solution**:
-- Use email addresses instead of display names
-- Ensure users exist in SharePoint/Active Directory
-- Check "Allow selection of: People Only" is set correctly
-- Verify "Choose from: All Users" is selected
-
----
-
-### Issue 7: Date/Time Not Defaulting
-
-**Symptom**: Timestamp column doesn't auto-populate
-
-**Solution**:
-- Edit column settings
-- Set "Default value" to "(Today)" for date or "[Today] + [Current Time]" for date/time
-- Note: This only applies to new items, not existing ones
-
----
-
-### Issue 8: Groups Don't Have Correct Permissions
+### Issue 4: Groups Don't Have Correct Permissions
 
 **Symptom**: Users can't access lists or see SharePoint groups
 
 **Solution**:
-- Go to Site Settings → Site Permissions
+- Go to Site Settings -> Site Permissions
 - Verify each group has correct permission level
-- Check users are actually members of the groups (People and Groups → Group Name → View membership)
+- Check users are actually members of the groups (People and Groups -> Group Name -> View membership)
 - Try removing and re-adding users to groups
 
 ---
 
 ## Summary
 
-You've successfully set up SharePoint for PostHub! Here's what you created:
+You've successfully set up SharePoint for PostHub. Here's what you created:
 
 **SharePoint Groups**: 3
 - RegularUser (Read)
 - FacilitiesEmployee (Contribute)
 - FacilitiesManager (Full Control)
 
-**SharePoint Lists**: 4
-- Locations (9 columns, 2 indexes)
-- Employees (9 columns, 2 indexes)
-- Packages (12 columns, 4 indexes)
-- PackageHistory (9 columns, 2 indexes)
+**SharePoint Lists**: 3
+- Locations (5 columns, 1 index)
+- Employees (3 columns, 2 indexes)
+- Packages (11 columns, 1 index)
 
-**Total Indexed Columns**: 10 (critical for performance)
+**Total Indexed Columns**: 4 (critical for performance)
 
 **Next Steps**:
-1. Review the Quick Start Checklist (`SHAREPOINT_QUICKSTART.md`)
+1. Review the Quick Reference appendix at the end of this guide
 2. Test the PostHub application with your new SharePoint setup
 3. Add additional employees and locations as needed
-4. Configure badge reader hardware for facilities workflow
+4. Configure smart card reader hardware for facilities workflow
 5. Print test barcode labels
 
 ---
@@ -937,24 +646,92 @@ You've successfully set up SharePoint for PostHub! Here's what you created:
 ## Need Help?
 
 **Common Resources**:
-- SharePoint List Settings: Settings gear → List Settings
-- View Columns: List Settings → Columns section
-- View Indexes: List Settings → Indexed columns
-- View Permissions: Settings gear → Site Settings → People and groups
+- SharePoint List Settings: Settings gear -> List Settings
+- View Columns: List Settings -> Columns section
+- View Indexes: List Settings -> Indexed columns
+- View Permissions: Settings gear -> Site Settings -> People and groups
 
 **Best Practices**:
 - Always index columns used in frequent queries or filters
-- Keep lookup chains simple (avoid lookup of lookup of lookup)
-- Use unique values on key identifier columns (BadgeID, TrackingNumber)
+- Use unique values on key identifier columns (SmartCardID, TrackingNumber)
 - Test with sample data before adding production data
 - Back up list data regularly (export to Excel)
+- All columns use Text or Note types only (SPARC createField compatibility)
 
 **POC Testing**:
-- Test badge swipe with actual hardware
-- Print and scan barcode labels
+- Test smart card scan with actual hardware
+- Print and scan QR code labels
 - Verify all user groups can access appropriate features
 - Test on Microsoft Edge browser (primary target)
-- Have at least 5 test employees with badge IDs
-- Have at least 10 test locations spanning the hierarchy
+- Have at least 5 test employees with smart card IDs
+- Have at least 6 locations covering multiple offices
 
-Good luck with your PostHub implementation!
+---
+
+## Appendix A: Quick Reference
+
+### Column Counts
+
+| List | Total Columns | Custom Columns | Indexes |
+|------|---------------|----------------|---------|
+| Locations | 5 | 4 | 1 |
+| Employees | 3 | 2 | 2 |
+| Packages | 11 | 8 + auto | 1 |
+| **TOTAL** | **19** | **14** | **4** |
+
+### Valid Values
+
+**Package Status:** created (default), stored, in transit, arrived, delivered
+
+**Location Title Format:** CITY | OFFICE | FLOOR (e.g., "LISBON | TOC | 1")
+
+**IsActive Values:** "true", "false"
+
+---
+
+## Appendix B: Common Mistakes to Avoid
+
+- [ ] Indexing SmartCardID column (critical for performance)
+- [ ] Enforcing unique values on SmartCardID and TrackingNumber (Title)
+- [ ] Using only Text and Note column types (SPARC limitation)
+- [ ] Setting IsActive as text "true"/"false" (not a Yes/No checkbox)
+- [ ] Testing with actual smart card reader hardware before POC
+
+---
+
+## Appendix C: Troubleshooting Quick Fixes
+
+**Smart card lookup is slow?**
+-> Index SmartCardID column immediately
+
+**Can't enforce unique values?**
+-> Index the column first, then edit to add uniqueness
+
+**CSV import not working?**
+-> Use Quick Edit grid view, paste smaller batches (5-10 rows)
+
+**Tracking number duplicates allowed?**
+-> Edit Title column -> Check "Enforce unique values" -> Save
+
+---
+
+## Appendix D: POC Demo Flow (20 minutes)
+
+1. **User sends package** (2 min) -> Show Send Mail form
+2. **Smart card scan** (5 min) -> Live smart card reader demo
+3. **Generate labels** (5 min) -> Print actual QR code labels
+4. **Scan QR code** (3 min) -> Update package status
+5. **Track history** (2 min) -> Show audit trail
+6. **Admin features** (3 min) -> Manage locations, reports
+
+### Pre-POC Checklist
+- [ ] All SharePoint lists created and verified
+- [ ] Sample data imported (10 employees, 6 locations)
+- [ ] Smart card reader hardware tested with SmartCardID lookup
+- [ ] QR code printer configured (4" x 6" labels)
+- [ ] QR code scanner tested
+- [ ] Test users assigned to all 3 SharePoint groups
+- [ ] PostHub application deployed to SiteAssets
+- [ ] End-to-end workflow tested successfully
+- [ ] Tested on Microsoft Edge browser
+- [ ] Backup of SharePoint lists created

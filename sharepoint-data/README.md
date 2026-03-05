@@ -8,299 +8,175 @@ This directory contains CSV sample data files for importing into SharePoint list
 
 | File | Purpose | Row Count | Dependencies |
 |------|---------|-----------|--------------|
-| **Locations.csv** | Sample location hierarchy | 17 | None - Import first |
-| **Employees_Sample.csv** | Test employee records | 10 | Requires Locations |
-| **Packages_Sample.csv** | Test package records | 4 | Requires Locations & Employees |
-| **CSV_IMPORT_GUIDE.md** | Detailed import instructions | - | - |
-
----
-
-## Quick Start
-
-### Import Order (Important!)
-
-1. **Locations.csv** → Import in 3 phases:
-   - Phase 1: Campus locations (no parent)
-   - Phase 2: Building locations (parent = campus)
-   - Phase 3: Room/mailroom locations (parent = building)
-
-2. **Employees_Sample.csv** → Update email addresses to match your users
-
-3. **Packages_Sample.csv** → Optional, for testing only
-
-### Import Method
-
-Use SharePoint **Quick Edit** (Grid View):
-1. Open the list in SharePoint
-2. Click **Quick Edit**
-3. Copy rows from CSV
-4. Paste into grid
-5. Set lookup columns manually (dropdowns)
-6. Click **Stop** to save
-
-Detailed instructions: See `CSV_IMPORT_GUIDE.md`
+| **Locations.csv** | Flat list of office locations | 6 | None |
+| **Employees_Sample.csv** | Test employee records | 10 | None |
+| **Packages_Sample.csv** | Test package records | 4 | None |
 
 ---
 
 ## Data Overview
 
-### Locations (17 total)
+### Locations (6 total)
 
-**Hierarchy Structure**:
-```
-Main Campus (Campus)
-├── Building A (Building)
-│   ├── Mailroom A (Mailroom)
-│   ├── Room 101 (Office)
-│   ├── Room 102 (Office)
-│   ├── Room 103 (Office)
-│   └── Conference Room A (Office)
-├── Building B (Building)
-│   ├── Mailroom B (Mailroom)
-│   ├── Room 201 (Office)
-│   └── Room 202 (Office)
-└── Building C (Building)
-    └── Storage Room 1 (Storage)
+All locations use a flat structure with the title format `CITY | OFFICE | FLOOR`:
 
-North Campus (Campus)
-└── North Building 1 (Building)
-    ├── North Mailroom (Mailroom)
-    └── North Office 100 (Office)
-```
+| Title | City | Office | Floor |
+|-------|------|--------|-------|
+| PORTO \| URBO \| 0 | PORTO | URBO | 0 |
+| LISBON \| TOC \| 1 | LISBON | TOC | 1 |
+| LISBON \| TOR \| 1 | LISBON | TOR | 1 |
+| LISBON \| ECHO \| 0 | LISBON | ECHO | 0 |
+| LISBON \| AURA \| 7 | LISBON | AURA | 7 |
+| LISBON \| LUMNIA \| 0 | LISBON | LUMNIA | 0 |
 
-**Location Types**:
-- 2 Campuses
-- 4 Buildings
-- 3 Mailrooms
-- 7 Offices
-- 1 Storage
-
----
+**Cities**: PORTO (1 location), LISBON (5 locations)
 
 ### Employees (10 total)
 
-**Badge IDs**: BADGE001 through BADGE010
+**Smart Card IDs**: SC001 through SC010
 
-**Departments Represented**:
-- Engineering (3 employees)
-- Marketing (1)
-- Finance (1)
-- Human Resources (1)
-- Operations (1)
-- Sales (1)
-- Customer Service (1)
-- IT Support (1)
-- Facilities (1)
-
-**Sample Records**:
-| Name | BadgeID | Department | Location |
-|------|---------|------------|----------|
-| John Smith | BADGE001 | Engineering | Room 101 |
-| Sarah Johnson | BADGE002 | Marketing | Room 102 |
-| Michael Chen | BADGE003 | Finance | Room 201 |
-| Emily Davis | BADGE004 | Human Resources | Room 202 |
-| Robert Martinez | BADGE005 | Operations | North Office 100 |
-
----
+| Title | SmartCardID | Email |
+|-------|---------|-------|
+| John Smith | SC001 | john.smith@company.com |
+| Sarah Johnson | SC002 | sarah.johnson@company.com |
+| Michael Chen | SC003 | michael.chen@company.com |
+| Emily Davis | SC004 | emily.davis@company.com |
+| Robert Martinez | SC005 | robert.martinez@company.com |
 
 ### Packages (4 test packages)
 
 **Tracking Numbers**: POSTHUB-20251203-00001 through 00004
 
-**Priority Levels**:
-- 1 Urgent
-- 2 Standard
-- 1 Low
+**Statuses represented**: 1 created, 1 stored, 1 in transit, 1 delivered
 
-**All packages have Status**: Sent (pending pickup)
+---
+
+## Import Instructions
+
+### Import Order
+
+Lists have no lookup dependencies. Recommended order:
+
+1. **Locations.csv** -- paste all 6 rows at once
+2. **Employees_Sample.csv** -- update email addresses to match your users
+3. **Packages_Sample.csv** -- optional, for testing only
+
+### Method 1: Quick Edit (Grid View) -- Recommended
+
+All columns are plain text, so paste works directly without dropdown selections.
+
+#### Import Locations
+
+1. Open **Locations** list in SharePoint
+2. Click **Quick Edit** (or **Edit in Grid View**)
+3. Copy all 6 data rows from Locations.csv (excluding header)
+4. Paste into the grid
+5. Click **Stop** to exit Quick Edit
+
+#### Import Employees
+
+1. Open **Employees** list
+2. Click **Quick Edit**
+3. Copy all 10 employee rows (excluding header)
+4. Paste into SharePoint grid
+5. Verify **SmartCardID** values are unique (SC001 through SC010)
+6. Click **Stop** to exit
+
+#### Import Packages (Optional)
+
+1. Open **Packages** list
+2. Click **Quick Edit**
+3. Copy package rows from Packages_Sample.csv (excluding header)
+4. Paste into grid
+5. Click **Stop** to exit
+
+### Method 2: Manual Entry (New Item Form)
+
+If Quick Edit doesn't work, use the standard New Item form:
+
+**Locations example:**
+- **Title**: PORTO | URBO | 0
+- **City**: PORTO
+- **Office**: URBO
+- **Floor**: 0
+- **IsActive**: true
+
+**Employees example:**
+- **Title**: John Smith
+- **SmartCardID**: SC001
+- **Email**: john.smith@company.com
+
+---
+
+## Verification After Import
+
+**Locations**:
+- [ ] 6 total locations imported
+- [ ] All titles follow "CITY | OFFICE | FLOOR" format
+- [ ] All have IsActive = "true"
+
+**Employees**:
+- [ ] 10 employees imported
+- [ ] All SmartCardIDs are unique (SC001-SC010)
+- [ ] Smart card search by SmartCardID returns results in < 2 seconds
+
+**Packages** (if imported):
+- [ ] 4 packages imported
+- [ ] All TrackingNumbers (Title) are unique
+- [ ] Sender/Recipient are email strings
 
 ---
 
 ## Customization
 
-### Before Importing Employees
-Update these columns to match your organization:
-- **Email**: Replace with actual user email addresses
-- **Department**: Adjust department names as needed
-- **Manager**: Assign actual managers (optional)
-
-### Before Importing Packages
-Update these columns:
-- **Sender**: Use actual user email addresses
-- **Recipient**: Use actual user email addresses
-- **TrackingNumber**: Use today's date (POSTHUB-YYYYMMDD-#####)
+### Before Importing
+- **Employees**: Replace email addresses with actual user emails
+- **Packages**: Update Sender/Recipient emails; use today's date for TrackingNumber (POSTHUB-YYYYMMDD-#####)
 
 ### Adding More Data
-
-**Add More Locations**:
-- Follow hierarchy: Campus → Building → Room
-- Set ParentLocation correctly
-- Use SortOrder for custom display order
-- Valid LocationTypes: Campus, Building, Mailroom, Office, Storage
-
-**Add More Employees**:
-- Use unique BadgeID (format: BADGE###)
-- Ensure BadgeID is unique across all employees
-- Set IsActive = Yes for active employees
-- Link OfficeLocation to existing location
-
-**Add More Packages**:
-- Use unique TrackingNumber (format: POSTHUB-YYYYMMDD-#####)
-- Valid Priorities: Standard, Urgent, Low
-- Valid Statuses: Sent, Received, Stored, In Transit, Arrived, Delivered
-- Link CurrentLocation and DestinationLocation to existing locations
-
----
-
-## Validation
-
-After importing, verify:
-
-**Locations**:
-- ✅ 17 total locations imported
-- ✅ Hierarchy works: Room → Building → Campus
-- ✅ ParentLocation shows names (not IDs)
-- ✅ All have IsActive = Yes
-
-**Employees**:
-- ✅ 10 employees imported
-- ✅ All BadgeIDs are unique (BADGE001-BADGE010)
-- ✅ OfficeLocation shows location names (not IDs)
-- ✅ All have IsActive = Yes
-- ✅ Badge search by BadgeID returns results in < 2 seconds
-
-**Packages** (if imported):
-- ✅ 4 packages imported
-- ✅ All TrackingNumbers are unique
-- ✅ Sender/Recipient show person names (not IDs)
-- ✅ CurrentLocation/DestinationLocation show location names
-- ✅ All have Status = Sent
+- **Locations**: Follow "CITY | OFFICE | FLOOR" title format, set IsActive to "true"
+- **Employees**: Use unique SmartCardID (format: SC###)
+- **Packages**: Use unique TrackingNumber as Title, valid statuses: created, stored, in transit, arrived, delivered
 
 ---
 
 ## Testing Scenarios
 
-Use this sample data to test PostHub features:
-
-### Scenario 1: Badge Swipe Lookup
-1. Use badge reader or manually enter: **BADGE001**
+### Scenario 1: Smart Card Scan Lookup
+1. Use smart card reader or manually enter: **SC001**
 2. System should find: John Smith
 3. Show his pending packages (if any exist)
 4. Should complete in < 2 seconds
 
 ### Scenario 2: Package Routing
-1. Create package for Sarah Johnson (Room 102)
-2. Set CurrentLocation: Mailroom A
-3. Set DestinationLocation: Room 102
-4. Track package as it moves:
-   - Mailroom A → Building A → Room 102
+1. Create package with sender john.smith@company.com
+2. Set CurrentLocation: LISBON | TOC | 1
+3. Set DestinationLocation: LISBON | TOR | 1
+4. Track package as status changes
 
-### Scenario 3: Multi-Campus Delivery
-1. Create package for Robert Martinez (North Campus)
-2. Set CurrentLocation: Mailroom A (Main Campus)
-3. Set DestinationLocation: North Office 100 (North Campus)
-4. Track inter-campus routing
-
-### Scenario 4: Location Hierarchy
-1. Search for all Building A locations
-2. Filter by Campus = "Main Campus"
-3. Show hierarchy tree view
-4. Edit Room 101 → Change ParentLocation to Building B
-
-### Scenario 5: Employee Badge Management
-1. Add new employee with BadgeID: BADGE011
-2. Try to add another employee with BADGE011 (should fail - duplicate)
-3. Search all employees in Building A
-4. Filter by IsActive = Yes
-
----
-
-## File Formats
-
-All CSV files use:
-- **Encoding**: UTF-8
-- **Delimiter**: Comma (,)
-- **Line Ending**: LF (Unix style)
-- **Header Row**: Yes (first row)
+### Scenario 3: Cross-City Delivery
+1. Create package from PORTO | URBO | 0
+2. Destination: LISBON | AURA | 7
+3. Track inter-city routing through status changes
 
 ---
 
 ## Troubleshooting
 
-**Problem**: Can't import CSV data
+**"Column 'SmartCardID' Must Be Unique" error**: Check CSV for duplicate smart card IDs. Import one row at a time if needed.
 
-**Solutions**:
-1. Check file encoding is UTF-8
-2. Verify column names match SharePoint exactly
-3. Try smaller batches (5 rows at a time)
-4. Use manual entry via New Item form
+**Quick Edit paste doesn't work**: Try smaller batches (5 rows at a time), use manual entry, or try Microsoft Edge browser.
 
-**Problem**: Lookup columns show errors
-
-**Solutions**:
-1. Ensure target list has data first
-2. Check spelling matches exactly
-3. Use dropdown selection instead of paste
-4. Import parent items before child items
-
-**Problem**: Badge lookup is slow
-
-**Solutions**:
-1. Verify BadgeID column is indexed
-2. Check "Enforce unique values" is enabled
-3. Re-index the column if needed
-4. Test with fewer than 1000 employees first
+**Special characters in location titles**: The pipe character (|) should paste correctly. If not, type titles manually. Ensure CSV encoding is UTF-8.
 
 ---
 
-## Best Practices
+## File Formats
 
-1. **Test First**: Import 2-3 rows to test, then import all
-2. **Backup Data**: Keep original CSV files unchanged
-3. **Use Real Emails**: Replace sample emails with actual users
-4. **Check Indexes**: Verify indexed columns before bulk import
-5. **Validate Lookups**: Ensure all lookup columns display names (not IDs)
-6. **Clean Test Data**: Delete test packages after POC demonstration
-7. **Gradual Expansion**: Start with sample data, add more as needed
-8. **Document Changes**: Keep notes of any customizations
+All CSV files use: UTF-8 encoding, comma delimiter, LF line endings, header row included.
+
+All columns use only **Text** or **Note** types (SPARC framework requirement).
 
 ---
 
-## Related Documentation
-
-- **Setup Guide**: `../SHAREPOINT_SETUP_GUIDE.md` - Complete setup instructions
-- **Quick Start**: `../SHAREPOINT_QUICKSTART.md` - Condensed checklist
-- **Import Guide**: `CSV_IMPORT_GUIDE.md` - Detailed import instructions
-- **Implementation Plan**: `../IMPLEMENTATION_PLAN.md` - Full project overview
-
----
-
-## Support
-
-**Need Help?**
-- Review `CSV_IMPORT_GUIDE.md` for detailed import steps
-- Check `SHAREPOINT_SETUP_GUIDE.md` for troubleshooting section
-- Verify all SharePoint lists are created before importing
-- Ensure indexes are in place (especially BadgeID)
-
-**Common Import Issues**:
-- Lookup columns → Use dropdowns, not paste
-- Person columns → Use email addresses
-- Unique constraints → Check BadgeID and TrackingNumber
-- Hierarchy → Import parents before children
-
----
-
-## Summary
-
-This sample data provides:
-- ✅ Complete location hierarchy for testing routing
-- ✅ 10 test employees with unique badge IDs
-- ✅ 4 test packages for workflow testing
-- ✅ Realistic organizational structure
-- ✅ Inter-campus and intra-campus scenarios
-- ✅ Multiple location types (Campus, Building, Mailroom, Office, Storage)
-
-**Ready to Import**: Follow the import order and use `CSV_IMPORT_GUIDE.md` for step-by-step instructions.
-
-**Next Steps**: After importing, run the verification checklist and test badge lookup performance!
+**Setup Guide**: See `../SHAREPOINT_SETUP_GUIDE.md` for complete SharePoint setup instructions.

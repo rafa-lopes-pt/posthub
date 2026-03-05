@@ -4,39 +4,29 @@ Hard rules that prevent runtime failures. These constraints were learned through
 
 ## SPARC Framework Constraints
 
+### SPARC createField Only Supports Text and Note
+
+SPARC's `createField` accepts only:
+- **Text** -- `createField({ title, indexed? })`
+- **Note** -- `createField({ title, multiline: true })`
+
+No Lookup, Person, Boolean, Choice, or Number types. All data stored as strings. Validation via Zod in client code.
+
 ### Never Use `.element.innerHTML` on SPARC Components
 
 **WRONG:**
 ```js
-const contentView = new View([], { showOnRender: false })
-
-// Later in your code
 contentView.element.innerHTML = '<p class="empty-message">No packages found</p>'
-
-// Or
-const table = createPackageTable({ packages })
-contentView.element.appendChild(table.element)
 ```
 
 **CORRECT:**
 ```js
-const contentView = new View([], { showOnRender: false })
-
-// Later in your code - use .children setter
 contentView.children = [
   new Text('No packages found', { type: 'p', class: 'empty-message' })
 ]
-
-// Or with components
-const table = createPackageTable({ packages })
-contentView.children = [table]
 ```
 
-**Why this matters:**
-- `.children` setter triggers SPARC's re-rendering lifecycle
-- Maintains component event handlers and reactivity
-- Ensures proper memory management and cleanup
-- Direct DOM manipulation bypasses SPARC's component system
+**Why:** `.children` setter triggers SPARC's re-rendering lifecycle, maintains event handlers and reactivity, ensures proper memory management.
 
 **Applies to:** `View`, `Container`, `Card`, `Modal`, and all SPARC layout components
 
@@ -48,15 +38,13 @@ Every status change MUST specify a location to ensure complete audit trail.
 
 **WRONG:**
 ```js
-await updatePackageStatus(packageId, 'Received', null, 'Label printed')
+await updatePackageStatus(packageId, 'stored', null, 'Label printed')
 ```
 
 **CORRECT:**
 ```js
-await updatePackageStatus(packageId, 'Received', locationId, 'Label printed')
+await updatePackageStatus(packageId, 'stored', 'LISBON | TOC | 1', 'Label printed')
 ```
-
-**Why:** Location tracking is required for every status change to provide complete package journey audit trail.
 
 ### Timeline Field is JSON Array (Never Manipulate as String)
 
@@ -64,19 +52,18 @@ The Timeline field stores a JSON array of status change objects. Always parse, m
 
 **WRONG:**
 ```js
-item.Timeline += '{"status":"Received"}'  // String concatenation
+item.Timeline += '{"status":"stored"}'
 ```
 
 **CORRECT:**
 ```js
 const timeline = item.Timeline ? JSON.parse(item.Timeline) : []
 timeline.push({
-  status: 'Received',
+  status: 'stored',
   date: new Date().toISOString(),
-  location: 'Mailroom A',
-  locationId: 10,
+  location: 'LISBON | TOC | 1',
   changedBy: 'jane@company.com',
-  notes: 'Label printed'
+  notes: 'Label printed at facilities'
 })
 item.Timeline = JSON.stringify(timeline)
 ```
@@ -84,10 +71,9 @@ item.Timeline = JSON.stringify(timeline)
 **Timeline Entry Structure:**
 ```json
 {
-  "status": "Received",
+  "status": "stored",
   "date": "2025-12-03T14:30:00Z",
-  "location": "Mailroom A",
-  "locationId": 10,
+  "location": "LISBON | TOC | 1",
   "changedBy": "jane@company.com",
   "notes": "Label printed at facilities"
 }
@@ -95,37 +81,42 @@ item.Timeline = JSON.stringify(timeline)
 
 ## PostHub Index Requirements
 
-### Badge ID and TrackingNumber MUST Be Indexed
+### Smart Card ID and TrackingNumber MUST Be Indexed
 
 **Critical for performance:**
-- `Employees.BadgeID` -- indexed for badge swipe lookup (< 2 seconds)
-- `Packages.TrackingNumber` -- indexed for barcode scan lookup
+- `Employees.SmartCardID` -- indexed for smart card scan lookup (< 2 seconds)
+- `Packages.Title` (TrackingNumber) -- indexed for QR code scan lookup
 
 **Also indexed:**
 - `Packages.Status` -- for filtering packages by status
 - `Packages.Sender` -- for "My Mail" queries
 - `Packages.Recipient` -- for "My Mail" queries
-- `Locations.IsActive` -- for filtering active locations
-- `Locations.LocationType` -- for filtering by type
 
-Without these indexes, badge swipe and barcode scanning will be unacceptably slow.
+Without these indexes, smart card scan and QR scanning will be unacceptably slow.
 
-## PostHub Barcode Format
+## PostHub QR Code Format
 
 ### Tracking Number Format
 
 **Format:** `POSTHUB-YYYYMMDD-XXXXX`
 
-**Example:** `POSTHUB-20251203-00001`
+**Example:** `POSTHUB-20260304-00001`
 
-**Barcode Type:** CODE128 (alphanumeric, compact, widely supported)
+**QR Code Content:** Full package data as JSON (not just tracking number)
 
-**WRONG:**
 ```js
-const trackingNumber = `PKG-${Math.random()}`  // Non-standard format
+const qrData = JSON.stringify({
+  TrackingNumber: 'POSTHUB-20260304-00001',
+  Sender: 'john.smith@company.com',
+  Recipient: 'sarah.johnson@company.com',
+  Status: 'stored',
+  CurrentLocation: 'LISBON | TOC | 1',
+  DestinationLocation: 'LISBON | TOR | 1',
+  PackageDetails: 'Large envelope - documents'
+})
 ```
 
-**CORRECT:**
+**Tracking Number Generation:**
 ```js
 function generateTrackingNumber() {
   const date = __dayjs().format('YYYYMMDD')
@@ -138,23 +129,14 @@ function generateTrackingNumber() {
 
 ### Custom Components vs SPARC Instances
 
-When creating custom components (like `packageTable.js`, `badgeSwipeInput.js`), prefer returning SPARC component instances over raw DOM elements.
-
-**Acceptable but not recommended:**
-```js
-export function createPackageTable({ packages }) {
-  const div = document.createElement('div')
-  div.innerHTML = '<table>...</table>'  // Raw DOM
-  return { element: div }
-}
-```
+When creating custom components (like `packageTable.js`, `smartCardInput.js`), prefer returning SPARC component instances over raw DOM elements.
 
 **Preferred:**
 ```js
 export function createPackageTable({ packages }) {
   return new Container([
     new Text('Packages', { type: 'h2' }),
-    // Build table using SPARC components or return SPARC instance
+    // Build table using SPARC components
   ])
 }
 ```
@@ -164,7 +146,6 @@ export function createPackageTable({ packages }) {
 ## Reference
 
 These constraints are extracted from:
-- `IMPLEMENTATION_PLAN.md` lines 656-767 (Development Lessons Learned)
-- `../sparc/.claude/rules/sparc-framework.md` (inherited SPARC constraints)
-
-For complete context, see: `IMPLEMENTATION_PLAN.md`
+- `requirements-review.md` (updated requirements)
+- `IMPLEMENTATION_PLAN.md` (development lessons learned)
+- `../sparc/.claude/rules/critical-constraints.md` (inherited SPARC constraints)

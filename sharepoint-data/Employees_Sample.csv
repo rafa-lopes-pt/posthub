@@ -1,11 +1,11 @@
-Name,Email,Department,BadgeID,OfficeLocation,Building,Campus,IsActive
-John Smith,john.smith@company.com,Engineering,BADGE001,Room 101,Building A,Main Campus,Yes
-Sarah Johnson,sarah.johnson@company.com,Marketing,BADGE002,Room 102,Building A,Main Campus,Yes
-Michael Chen,michael.chen@company.com,Finance,BADGE003,Room 201,Building B,Main Campus,Yes
-Emily Davis,emily.davis@company.com,Human Resources,BADGE004,Room 202,Building B,Main Campus,Yes
-Robert Martinez,robert.martinez@company.com,Operations,BADGE005,North Office 100,North Building 1,North Campus,Yes
-Lisa Anderson,lisa.anderson@company.com,Engineering,BADGE006,Room 103,Building A,Main Campus,Yes
-David Wilson,david.wilson@company.com,Sales,BADGE007,Conference Room A,Building A,Main Campus,Yes
-Jennifer Taylor,jennifer.taylor@company.com,Customer Service,BADGE008,Room 201,Building B,Main Campus,Yes
-James Brown,james.brown@company.com,IT Support,BADGE009,Room 102,Building A,Main Campus,Yes
-Maria Garcia,maria.garcia@company.com,Facilities,BADGE010,Mailroom A,Building A,Main Campus,Yes
+Title,SmartCardID,Email
+John Smith,SC001,john.smith@company.com
+Sarah Johnson,SC002,sarah.johnson@company.com
+Michael Chen,SC003,michael.chen@company.com
+Emily Davis,SC004,emily.davis@company.com
+Robert Martinez,SC005,robert.martinez@company.com
+Lisa Anderson,SC006,lisa.anderson@company.com
+David Wilson,SC007,david.wilson@company.com
+Jennifer Taylor,SC008,jennifer.taylor@company.com
+James Brown,SC009,james.brown@company.com
+Maria Garcia,SC010,maria.garcia@company.com
