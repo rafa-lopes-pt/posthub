@@ -580,6 +580,7 @@ interface ToastOptions {
         y?: number | string;
     };
 }
+type ToastType = 'error' | 'success' | 'info' | 'warning';
 interface ToastLoadingController {
     success(message: string, options?: ToastOptions): void;
     error(message: string, options?: ToastOptions): void;
@@ -654,6 +655,22 @@ interface SPGroup {
     Title: string;
     Description: string;
     OwnerTitle: string;
+}
+interface ProfileProperty {
+    Key: string;
+    Value: string;
+    ValueType: string;
+}
+interface UserProfilePayload {
+    DisplayName: string;
+    Email: string;
+    Title: string;
+    PictureUrl: string;
+    PersonalUrl: string;
+    DirectReports: unknown;
+    ExtendedManagers: unknown;
+    Peers: unknown;
+    UserProfileProperties: unknown;
 }
 interface PeopleSearchOptions {
     /**
@@ -1071,6 +1088,12 @@ interface RouterProps {
      * When omitted, a built-in 404 page is shown that auto-redirects to home after 8 seconds.
      */
     notFoundRoute?: Route | Promise<Route>;
+    /**
+     * Custom route rendered when the user lacks permission to access the application.
+     * Accepts a {@link Route} or a `Promise<Route>` (e.g. from {@link defineRoute}).
+     * When omitted, a built-in 403 page is shown with a generic access denied message.
+     */
+    unauthorizedRoute?: Route | Promise<Route>;
 }
 /** Array of route path strings registered with the Router. */
 type RoutePaths = string[];
@@ -1126,6 +1149,15 @@ declare class Router {
      * @throws {SystemError} If the Router has not been initialised.
      */
     static popLevel(x?: number): void;
+    /**
+     * Renders the unauthorized access page.
+     *
+     * Tears down the current route and displays the 403 page. Does not push
+     * a history entry -- unauthorized is a terminal state, not a navigable route.
+     *
+     * @throws {SystemError} If the Router has not been initialised.
+     */
+    static unauthorized(): void;
     /** Current route path derived from `location.hash`. Returns `"/"` for the home route. */
     static get location(): string;
     /** Full browser URL including protocol, host, path, query, and hash. */
@@ -1152,7 +1184,7 @@ declare class Router {
      */
     constructor(routeRelativePaths: RoutePaths, props?: RouterProps);
     /**
-     * Resolves the optional 404 route and performs the first navigation.
+     * Resolves the optional 404 and 403 routes and performs the first navigation.
      *
      * Must be called after the singleton is assigned so that `_refreshCurrentPage`
      * can use `Router._runtimeInstance`.
@@ -1163,6 +1195,12 @@ declare class Router {
      * Used when no custom `notFoundRoute` is provided.
      */
     private _createDefaultNotFoundRoute;
+    /**
+     * Creates the built-in 403 route with a generic access denied message.
+     * Used when no custom `unauthorizedRoute` is provided.
+     * Unlike the 404 page, there is no redirect timer -- unauthorized is a terminal state.
+     */
+    private _createDefaultUnauthorizedRoute;
     [Symbol.toStringTag](): string;
     /**
      * Converts a route path to its absolute file URL via {@link resolvePath}.
@@ -1283,8 +1321,8 @@ type pageResetOptions = {
      */
     removeStyles: boolean;
     /**
-     * If provided, the given path will be used to load a css file.
-     * This is intended to load the main css theme file.
+     * Optional path to a client/app theme CSS file.
+     * Loaded AFTER the base SPARC theme, overriding tokens and adding custom styles.
      */
     themePath?: string;
 };
@@ -1415,6 +1453,80 @@ interface RouteConfig {
 }
 declare function defineRoute(closureCallback: (config: RouteConfig) => Promise<HTMDNode> | HTMDNode): Promise<Route>;
 
+/** All CAML comparison operators supported by the query builder. */
+type CAMLOperator = 'Eq' | 'Neq' | 'Gt' | 'Lt' | 'Geq' | 'Leq' | 'Contains' | 'BeginsWith' | 'IsNull' | 'IsNotNull' | 'Or';
+/** Operators that compare a field against a typed value. */
+type CAMLValueOperator = 'Eq' | 'Neq' | 'Gt' | 'Lt' | 'Geq' | 'Leq' | 'Contains' | 'BeginsWith';
+/**
+ * A single field condition in a CAML query.
+ *
+ * - `string` -- shorthand for exact match (`Eq` operator)
+ * - `{ value, operator }` -- explicit operator with a single value
+ * - `{ value: string[], operator: 'Or', match? }` -- same-field multi-value OR
+ *
+ * @example
+ * // Exact match (string shorthand):
+ * "Hello"
+ *
+ * // Explicit operator:
+ * { value: "30", operator: "Gt" }
+ *
+ * // Null check (no value needed):
+ * { value: "", operator: "IsNull" }
+ *
+ * // Same-field multi-value OR (default match: Eq):
+ * { value: ["Active", "Pending"], operator: "Or" }
+ *
+ * // Same-field multi-value OR with custom match operator:
+ * { value: ["80", "90"], operator: "Or", match: "Geq" }
+ */
+type CAMLCondition = string | {
+    value: string;
+    operator: CAMLValueOperator;
+} | {
+    value: string;
+    operator: 'IsNull' | 'IsNotNull';
+} | {
+    value: string[];
+    operator: 'Or';
+    match?: CAMLValueOperator;
+};
+/**
+ * Object representation of a CAML query for `ListApi.getItems()`.
+ *
+ * Field entries are AND-ed together. The optional `$or` key accepts an array
+ * of query objects whose results are OR-ed, enabling cross-field OR logic.
+ * Nesting depth for `$or` is limited to 2 levels.
+ *
+ * All variants are fully backwards compatible -- passing a plain
+ * `Record<string, string>` still works as before (exact Eq match).
+ *
+ * @example
+ * // Exact match (backwards compatible):
+ * { Title: "Hello" }
+ *
+ * // Explicit operator:
+ * { Age: { value: "30", operator: "Gt" } }
+ *
+ * // Null check:
+ * { Email: { value: "", operator: "IsNull" } }
+ *
+ * // Same-field multi-value OR:
+ * { Status: { value: ["Active", "Pending"], operator: "Or" } }
+ *
+ * // Multi-value OR with custom match operator:
+ * { Score: { value: ["80", "90"], operator: "Or", match: "Geq" } }
+ *
+ * // Cross-field OR:
+ * { $or: [{ Department: "HR" }, { Department: "IT" }] }
+ *
+ * // Combined -- field conditions AND-ed, cross-field OR separately:
+ * { Status: "Active", $or: [{ Dept: "HR" }, { Dept: "IT" }] }
+ */
+type CAMLQueryObject = Record<string, CAMLCondition> & {
+    $or?: CAMLQueryObject[];
+};
+
 interface SPList {
     Id: string;
     Title: string;
@@ -1462,11 +1574,6 @@ interface CreateFieldOptions {
     multiline?: boolean;
     indexed?: boolean;
 }
-/**
- * An object to lookup list items based on CAML query.
- * At the moment only exact values are supported for lookups
- */
-type CAMLQueryObject = Record<string, string>;
 interface ListApiOptions {
     listItemType?: string;
     siteApi?: SiteApi;
@@ -1480,6 +1587,9 @@ declare class ListApi {
     protected _siteApi: SiteApi;
     constructor(title: string, options?: ListApiOptions);
     private _buildAndClause;
+    private _buildOrClause;
+    private _parseCondition;
+    private _buildWhereContent;
     protected _parseCAMLQueryObject(args: CAMLQueryObject): string;
     protected _createCAMLQueryPayload(camlQuery: string, pagingInfo?: string | null): {
         query: Record<string, unknown>;
@@ -1886,6 +1996,13 @@ interface GroupHierarchyEntry {
     groupLabel: string;
 }
 /**
+ * Optional settings for {@link CurrentUser.initialize}.
+ */
+interface InitializeOptions {
+    /** Name or email of a target user to load instead of the authenticated user. Debug/testing feature. */
+    targetUser?: string;
+}
+/**
  * Async singleton that holds the current user's profile and group hierarchy.
  *
  * Wraps {@link getFullUserDetails} from `people.api.ts`, which consolidates
@@ -1893,11 +2010,10 @@ interface GroupHierarchyEntry {
  * single {@link FullUserDetails} object.
  *
  * **Lifecycle:**
- * 1. Instantiate with `new CurrentUser()` -- returns the singleton slot
- *    (subsequent `new` calls return the same instance).
- * 2. Call `await user.initialize(groupHierarchy?)` to load data from
- *    SharePoint. This step is idempotent once it succeeds.
- * 3. Access properties via the type-safe `get()` method or the convenience
+ * 1. `const user = await new CurrentUser().initialize(groupHierarchy?, options?)` --
+ *    preferred one-liner. `initialize()` returns `this` for chaining.
+ *    Subsequent `new` calls return the same singleton instance.
+ * 2. Access properties via the type-safe `get()` method or the convenience
  *    getters (`accessLevel`, `group`, `groupId`, `groupTitle`).
  *
  * **Error recovery:** if `initialize()` fails, the singleton reference is
@@ -1906,13 +2022,16 @@ interface GroupHierarchyEntry {
  *
  * @example
  * ```ts
- * const user = new CurrentUser();
- * await user.initialize(groupHierarchy);
+ * // Preferred: construct + initialize in one step (initialize returns this)
+ * const user = await new CurrentUser().initialize(groupHierarchy);
  *
  * user.get('displayName'); // string
  * user.get('email');       // string
  * user.get('groups');      // SPGroup[]
  * user.accessLevel;        // 'ADMIN' | 'MEMBER' | ... | null
+ *
+ * // Debug: load another user's profile instead of the authenticated user
+ * const user = await new CurrentUser().initialize(hierarchy, { targetUser: 'john@company.com' });
  * ```
  *
  * @see {@link FullUserDetails} for the complete list of properties available via `get()`.
@@ -1940,10 +2059,12 @@ declare class CurrentUser {
      * @param groupHierarchy - Optional ordered list of groups from lowest to
      *   highest privilege. The array is walked from last index to first; the
      *   first case-insensitive match wins.
+     * @param options - Optional settings. Use `options.targetUser` to load a
+     *   different user's profile (debug/testing).
      * @returns A Promise resolving with the initialized `CurrentUser` instance.
      * @throws {SystemError} `CurrentUserInitError` if the underlying API calls fail.
      */
-    initialize(groupHierarchy?: GroupHierarchyEntry[]): Promise<CurrentUser>;
+    initialize(groupHierarchy?: GroupHierarchyEntry[], options?: InitializeOptions): Promise<CurrentUser>;
     /**
      * Type-safe accessor for any property on the underlying {@link FullUserDetails}.
      *
@@ -2213,6 +2334,16 @@ declare class FieldLabel extends HTMDElement {
     get tooltip(): string | undefined;
 }
 
+interface CAMLQueryResponse<T> {
+    value: T[];
+    ListItemCollectionPosition: {
+        PagingInfo: string;
+    } | null;
+}
+type SPCollectionResponse<T> = {
+    value: T[];
+};
+
 declare global {
     interface Window {
         $: typeof $;
@@ -2222,4 +2353,4 @@ declare global {
 }
 
 export { AccordionGroup, AccordionItem, Button, Card, CheckBox, ComboBox, Container, CurrentUser, DateInput, Dialog, ErrorBoundary, FieldLabel, FormControl, FormField, FormSchema, Fragment, HTMDElement, Image, LinkButton, List, Loader, Modal, NavigationEvent, NumberInput, PeoplePicker, Router, SimpleElapsedTimeBenchmark, SiteApi, StyleResource, SystemError, TabGroup, Text, TextInput, Toast, View, ViewSwitcher, copyToClipboard, defineRoute, enforceStrictObject, generateRuntimeUID, generateUUIDv4, getFullUserDetails, getIcon, getUserProfile, pageReset, refreshRequestDigest, resolvePath, searchUsers, spDELETE, spGET, spMERGE, spPOST };
-export type { ComboBoxDataset, ComboBoxOptionProps, ComboBoxProps, CreateFieldOptions, CreateListOptions, DATE_FORMATS, DateInputProps, FullUserDetails, GroupHierarchyEntry, PeoplePickerProps, PeopleSearchOptions, PeopleSearchResult, PeopleSearchResultData, SPField, SPGroup, SPList, SPUser, SPWeb, ToastLoadingController, ToastPromiseMessages, UserProfile };
+export type { AccordionGroupProps, AccordionItemProps, ButtonProps, CAMLCondition, CAMLOperator, CAMLQueryObject, CAMLQueryResponse, CAMLValueOperator, CardProps, CardVariants, ChildrenOptions, ComboBoxDataset, ComboBoxOptionProps, ComboBoxProps, ContainerProps, ContainerTags, CreateFieldOptions, CreateListOptions, DATE_FORMATS, DateInputProps, DialogProps, DialogVariants, ErrorBoundaryProps, ErrorOptions, FieldLabelPosition, FieldLabelProps, FormControlProps, FormFieldProps, FormFieldType, FragmentProps, FullUserDetails, GetItemsOptions, GroupHierarchyEntry, HTMDElementInterface, HTMDElementProps, HTMDNode, HTMDSingleNode, ImageProps, InitializeOptions, LinkButtonProps, ListApiOptions, ListProps, LoaderProps, ModalProps, NavigationOptions, NumberInputProps, PeoplePickerProps, PeopleSearchOptions, PeopleSearchResult, PeopleSearchResultData, ProfileProperty, RouteConfig, RouteOptions, RoutePaths, RouterProps, RuntimeEventListenerOptions, RuntimeEventOptions, SPCollectionResponse, SPField, SPGroup, SPList, SPRequestOptions, SPUser, SPWeb, StyleResourceOptions, TabConfig, TabGroupProps, TextInputProps, TextProps, ToastLoadingController, ToastOptions, ToastPromiseMessages, ToastType, UserProfile, UserProfilePayload, ViewProps, ViewSwitcherProps, pageResetOptions };

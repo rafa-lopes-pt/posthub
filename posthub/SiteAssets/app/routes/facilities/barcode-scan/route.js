@@ -36,6 +36,8 @@ export default defineRoute(async (config) => {
   // State
   let scannedPackages = []
   let editingIndex = -1
+  let scanDebounceTimer = null
+  let isReadyToScan = false
 
   // Bulk update form fields
   const bulkStatusField = new FormField({ value: '' })
@@ -77,34 +79,33 @@ export default defineRoute(async (config) => {
     if (ta) ta.focus()
   }
 
-  // Attach paste listener after render
-  function attachPasteListener() {
+  // Attach input + paste listeners after render
+  function attachScanListeners() {
     setTimeout(() => {
       const ta = getTextarea()
       if (!ta) return
       ta.addEventListener('paste', handlePaste)
+      ta.addEventListener('input', handleScanInput)
       ta.focus()
     }, 100)
   }
 
-  // Re-focus textarea on clicks outside interactive elements
-  function attachRefocusListener() {
-    setTimeout(() => {
-      document.addEventListener('click', (e) => {
-        const target = e.target
-        const isInteractive = target.closest('button, select, input, textarea:not(.barcode-scan__hidden-textarea), a, .nofbiz__combobox')
-        if (!isInteractive) focusTextarea()
-      })
-    }, 100)
+  // Debounced input handler -- waits 1s after last keystroke before processing
+  // Scanners type character-by-character, so we keep waiting while data arrives
+  function handleScanInput() {
+    if (!isReadyToScan) return
+    clearTimeout(scanDebounceTimer)
+    scanDebounceTimer = setTimeout(() => {
+      const ta = getTextarea()
+      if (!ta || !ta.value.trim()) return
+      processScanData(ta.value)
+      ta.value = ''
+    }, 1000)
   }
 
-  function handlePaste(e) {
-    e.preventDefault()
-    const text = e.clipboardData.getData('text')
+  function processScanData(text) {
     if (!text || !text.trim()) return
 
-    // Split concatenated JSON objects (e.g. `{...}{...}`) into individual entries
-    // then also split by newlines for multi-line pastes
     const chunks = text.trim().replace(/\}\s*\{/g, '}\n{').split('\n')
     const parsed = []
     let parseErrors = 0
@@ -127,12 +128,37 @@ export default defineRoute(async (config) => {
 
     if (parsed.length === 0) {
       Toast.warning('No valid packages found in scanned data')
-      const ta = getTextarea()
-      if (ta) ta.value = ''
       return
     }
 
     matchAndAddPackages(parsed)
+  }
+
+  function handleReadyToScan() {
+    isReadyToScan = true
+    const ta = getTextarea()
+    if (ta) {
+      ta.value = ''
+      ta.focus()
+    }
+    Toast.success('Scanner ready -- scan a QR code now')
+  }
+
+  // Re-focus textarea on clicks outside interactive elements
+  function attachRefocusListener() {
+    setTimeout(() => {
+      document.addEventListener('click', (e) => {
+        const target = e.target
+        const isInteractive = target.closest('button, select, input, textarea:not(.barcode-scan__hidden-textarea), a, .nofbiz__combobox')
+        if (!isInteractive) focusTextarea()
+      })
+    }, 100)
+  }
+
+  function handlePaste(e) {
+    e.preventDefault()
+    const text = e.clipboardData.getData('text')
+    processScanData(text)
     const ta = getTextarea()
     if (ta) ta.value = ''
   }
@@ -172,10 +198,10 @@ export default defineRoute(async (config) => {
   }
 
   async function handleBulkUpdate() {
-    const newStatus = bulkStatusField.value?.value || bulkStatusField.value || ''
+    const newStatus = 'Stored'
     const newLocation = bulkLocationField.value?.value || bulkLocationField.value || ''
 
-    if (!newStatus && !newLocation) {
+    if (!newLocation) {
       Toast.warning('Select a status or location to apply')
       return
     }
@@ -223,10 +249,11 @@ export default defineRoute(async (config) => {
           onClickHandler: () => {
             scannedPackages = []
             editingIndex = -1
+            isReadyToScan = false
             bulkStatusField.value = ''
             bulkLocationField.value = ''
             updateView()
-            attachPasteListener()
+            attachScanListeners()
           },
           class: 'barcode-scan__scan-btn'
         }),
@@ -364,6 +391,10 @@ export default defineRoute(async (config) => {
             type: 'p',
             class: 'barcode-scan__prompt-subtitle'
           }),
+          new Button('Ready To Scan', {
+            onClickHandler: handleReadyToScan,
+            class: 'barcode-scan__scan-btn barcode-scan__ready-btn'
+          }),
           new Button('Simulate Scan', {
             onClickHandler: handleSimulateScan,
             class: 'barcode-scan__scan-btn'
@@ -372,13 +403,13 @@ export default defineRoute(async (config) => {
       ], { class: 'barcode-scan__prompt' })
 
       tableContainer.children = [prompt, hiddenTextareaContainer]
-      attachPasteListener()
+      attachScanListeners()
     } else {
       // SCANNED state: bulk bar + table + hidden textarea
       // Pre-select "arrived" in status and first package's destination in location
       const defaultDest = scannedPackages[0]?.DestinationLocation || ''
       const statusDataset = PACKAGE_STATUSES.map(s => ({
-        label: s, value: s, checked: s === 'arrived'
+        label: s, value: s, checked: s === 'Stored'
       }))
       const locationDataset = locationOptions.map(l => ({
         label: l, value: l, checked: l === defaultDest

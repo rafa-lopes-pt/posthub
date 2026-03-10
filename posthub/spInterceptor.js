@@ -69,8 +69,11 @@ var SPInterceptor = (function ($) {
           { Id: 11, Title: 'POSTHUB-20260131-00101', Sender: 'robert.martinez@company.com', Recipient: 'jennifer.taylor@company.com', Status: 'delivered', CurrentLocation: 'LISBON | ECHO | 0', DestinationLocation: 'LISBON | ECHO | 0', PackageDetails: 'Large box - Brochures and flyers', InternalNotes: '', Timeline: '[]', AuthorId: 1, Created: '2026-01-31T10:00:00Z', Modified: '2026-01-31T10:00:00Z' },
           { Id: 12, Title: 'POSTHUB-20260201-00112', Sender: 'james.brown@company.com', Recipient: 'maria.garcia@company.com', Status: 'delivered', CurrentLocation: 'LISBON | TOC | 1', DestinationLocation: 'LISBON | TOC | 1', PackageDetails: 'Envelope - Legal documents', InternalNotes: '', Timeline: '[]', AuthorId: 1, Created: '2026-02-01T10:00:00Z', Modified: '2026-02-01T10:00:00Z' },
           { Id: 13, Title: 'POSTHUB-20260202-00123', Sender: 'david.wilson@company.com', Recipient: 'sarah.johnson@company.com', Status: 'stored', CurrentLocation: 'PORTO | URBO | 0', DestinationLocation: 'LISBON | TOR | 1', PackageDetails: 'Large box - Desk organizers', InternalNotes: '', Timeline: '[]', AuthorId: 1, Created: '2026-02-02T10:00:00Z', Modified: '2026-02-02T10:00:00Z' },
+          { Id: 14, Title: 'POSTHUB-20260310-00001', Sender: 'john.smith@company.com', Recipient: 'lisa.anderson@company.com', Status: 'created', CurrentLocation: 'LISBON | TOC | 1', DestinationLocation: 'LISBON | AURA | 7', PackageDetails: 'Envelope - Contract documents', InternalNotes: '', Timeline: '[]', AuthorId: 1, Created: '2026-03-10T09:00:00Z', Modified: '2026-03-10T09:00:00Z' },
+          { Id: 15, Title: 'POSTHUB-20260310-00002', Sender: 'john.smith@company.com', Recipient: 'emily.davis@company.com', Status: 'created', CurrentLocation: 'LISBON | TOC | 1', DestinationLocation: 'LISBON | LUMNIA | 0', PackageDetails: 'Box - Office supplies', InternalNotes: '', Timeline: '[]', AuthorId: 1, Created: '2026-03-10T09:30:00Z', Modified: '2026-03-10T09:30:00Z' },
+          { Id: 16, Title: 'POSTHUB-20260310-00003', Sender: 'john.smith@company.com', Recipient: 'michael.chen@company.com', Status: 'created', CurrentLocation: 'LISBON | TOC | 1', DestinationLocation: 'LISBON | ECHO | 0', PackageDetails: 'Large envelope - Technical specs', InternalNotes: '', Timeline: '[]', AuthorId: 1, Created: '2026-03-10T10:00:00Z', Modified: '2026-03-10T10:00:00Z' },
         ],
-        fields: [], nextId: 14
+        fields: [], nextId: 17
       },
       Employees: {
         items: [

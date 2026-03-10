@@ -8,6 +8,9 @@ import {
   Toast,
   SiteApi,
   CurrentUser,
+  FormField,
+  ComboBox,
+  FieldLabel,
 } from '../../../libs/nofbiz/nofbiz.base.js'
 
 import { createNavbar } from '../../../components/navbar.js'
@@ -20,10 +23,27 @@ export default defineRoute(async (config) => {
   const currentUser = new CurrentUser()
 
   // State
-  let smartCardScanned = false
+  let recipientSelected = false
   let arrivedPackages = []
   const selectedPackages = new Set()
-  let debounceTimer = null
+
+  // Load employees for ComboBox dataset
+  const allEmployees = await siteApi.list(LIST_EMPLOYEES).getItems()
+  const employeeOptions = allEmployees.map(e => ({
+    label: `${e.Title} (${e.Email})`,
+    value: e.Email,
+  }))
+
+  // Recipient ComboBox
+  const recipientField = new FormField({ value: { value: '', label: '' } })
+  const recipientComboBox = new ComboBox(recipientField, employeeOptions, {
+    placeholder: 'Search by name or email...',
+    onSelectHandler: (selection) => {
+      if (selection && selection.value) {
+        handleRecipientSelect(selection.value, selection.label)
+      }
+    },
+  })
 
   // Navbar component
   const navbar = createNavbar()
@@ -39,7 +59,7 @@ export default defineRoute(async (config) => {
         class: 'user-delivery__title'
       }),
     ], { class: 'user-delivery__title-with-icon' }),
-    new Text('Scan smart card to find packages ready for delivery', {
+    new Text('Search for a recipient to find packages ready for delivery', {
       type: 'p',
       class: 'user-delivery__subtitle'
     }),
@@ -48,78 +68,35 @@ export default defineRoute(async (config) => {
   // Table container (swapped between prompt, table, and confirmation)
   const tableContainer = new Container([], { class: 'user-delivery__table-container' })
 
-  // Smart card input container
-  const smartCardInputContainer = new Container([], { class: 'user-delivery__smart-card-wrapper' })
-  smartCardInputContainer.children = `
-    <input type="text" class="user-delivery__smart-card-input" placeholder="Scan smart card or enter Smart Card ID..." autofocus />
-  `
-
-  function attachSmartCardListener() {
-    setTimeout(() => {
-      const input = document.querySelector('.user-delivery__smart-card-input')
-      if (!input) return
-      input.focus()
-      input.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer)
-        debounceTimer = setTimeout(() => {
-          const value = e.target.value.trim()
-          if (value) handleSmartCardScan(value)
-        }, 300)
-      })
-      input.addEventListener('paste', (e) => {
-        clearTimeout(debounceTimer)
-        setTimeout(() => {
-          const value = e.target.value.trim()
-          if (value) handleSmartCardScan(value)
-        }, 50)
-      })
-    }, 100)
-  }
-
-  // Smart card scan prompt
-  const smartCardPrompt = new Container([
+  // Search prompt
+  const searchPrompt = new Container([
     new Container([
-      new Text(getIcon('calendar-fill'), {
+      new Text(getIcon('search-line'), {
         type: 'div',
         class: 'user-delivery__card-icon'
       }),
-      new Text('Waiting for Smart Card Scan', {
+      new Text('Search for Recipient', {
         type: 'h2',
         class: 'user-delivery__prompt-title'
       }),
-      new Text('Please scan your smart card to load packages ready for delivery', {
+      new Text('Type a name or email to find arrived packages', {
         type: 'p',
         class: 'user-delivery__prompt-subtitle'
       }),
-      smartCardInputContainer,
-      new Button('Simulate Smart Card Scan', {
-        onClickHandler: () => handleSmartCardScan('SC001'),
-        class: 'user-delivery__scan-btn'
-      }),
+      new FieldLabel('Recipient', recipientComboBox, { class: 'user-delivery__recipient-field' }),
     ], { class: 'user-delivery__prompt-content' }),
   ], { class: 'user-delivery__prompt' })
 
-  async function handleSmartCardScan(smartCardId) {
-    // Lookup employee
-    const allEmployees = await siteApi.list(LIST_EMPLOYEES).getItems()
-    const employee = allEmployees.find(e => e.SmartCardID === smartCardId)
-
-    if (!employee) {
-      Toast.error('Employee not found')
-      const input = document.querySelector('.user-delivery__smart-card-input')
-      if (input) { input.value = ''; input.focus() }
-      return
-    }
-
-    // Get arrived packages for this employee (as recipient)
+  async function handleRecipientSelect(email, label) {
     const allPackages = await siteApi.list(LIST_PACKAGES).getItems()
     arrivedPackages = allPackages.filter(pkg =>
-      pkg.Status === 'arrived' && pkg.Recipient === employee.Email
+      pkg.Status === 'arrived' && pkg.Recipient === email
     )
 
-    smartCardScanned = true
+    const name = label.split(' (')[0]
+    recipientSelected = true
     selectedPackages.clear()
-    Toast.success(`Found ${arrivedPackages.length} arrived package(s) for ${employee.Title}`)
+    Toast.success(`Found ${arrivedPackages.length} arrived package(s) for ${name}`)
     updateView()
   }
 
@@ -197,7 +174,7 @@ export default defineRoute(async (config) => {
         }),
         new Button('Deliver More', {
           onClickHandler: () => {
-            smartCardScanned = false
+            recipientSelected = false
             arrivedPackages = []
             selectedPackages.clear()
             updateView()
@@ -209,9 +186,8 @@ export default defineRoute(async (config) => {
   }
 
   function updateView() {
-    if (!smartCardScanned) {
-      tableContainer.children = [smartCardPrompt]
-      attachSmartCardListener()
+    if (!recipientSelected) {
+      tableContainer.children = [searchPrompt]
     } else {
       const allSelected = selectedPackages.size === arrivedPackages.length && arrivedPackages.length > 0
 

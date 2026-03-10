@@ -8,6 +8,9 @@ import {
   Toast,
   Router,
   SiteApi,
+  FormField,
+  ComboBox,
+  FieldLabel,
 } from '../../../libs/nofbiz/nofbiz.base.js'
 
 import { createNavbar } from '../../../components/navbar.js'
@@ -19,9 +22,26 @@ export default defineRoute(async (config) => {
   const siteApi = new SiteApi()
 
   // State
-  let smartCardScanned = false
+  let senderSelected = false
   let pendingPackages = []
-  let debounceTimer = null
+
+  // Load employees for ComboBox dataset
+  const allEmployees = await siteApi.list(LIST_EMPLOYEES).getItems()
+  const employeeOptions = allEmployees.map(e => ({
+    label: `${e.Title} (${e.Email})`,
+    value: e.Email,
+  }))
+
+  // Sender ComboBox
+  const senderField = new FormField({ value: { value: '', label: '' } })
+  const senderComboBox = new ComboBox(senderField, employeeOptions, {
+    placeholder: 'Search by name or email...',
+    onSelectHandler: (selection) => {
+      if (selection && selection.value) {
+        handleSenderSelect(selection.value, selection.label)
+      }
+    },
+  })
 
   // Navbar component
   const navbar = createNavbar()
@@ -37,7 +57,7 @@ export default defineRoute(async (config) => {
         class: 'register-package__title'
       }),
     ], { class: 'register-package__title-with-icon' }),
-    new Text('Scan smart card to load pending packages', {
+    new Text('Search for a sender to load pending packages', {
       type: 'p',
       class: 'register-package__subtitle'
     }),
@@ -46,87 +66,48 @@ export default defineRoute(async (config) => {
   // Table container
   const tableContainer = new Container([], { class: 'register-package__table-container' })
 
-  // Smart card input container
-  const smartCardInputContainer = new Container([], { class: 'register-package__smart-card-wrapper' })
-  smartCardInputContainer.children = `
-    <input type="text" class="register-package__smart-card-input" placeholder="Scan smart card or enter Smart Card ID..." autofocus />
-  `
-
-  function attachSmartCardListener() {
-    setTimeout(() => {
-      const input = document.querySelector('.register-package__smart-card-input')
-      if (!input) return
-      input.focus()
-      input.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer)
-        debounceTimer = setTimeout(() => {
-          const value = e.target.value.trim()
-          if (value) handleCardScan(value)
-        }, 300)
-      })
-      input.addEventListener('paste', (e) => {
-        clearTimeout(debounceTimer)
-        setTimeout(() => {
-          const value = e.target.value.trim()
-          if (value) handleCardScan(value)
-        }, 50)
-      })
-    }, 100)
-  }
-
-  // Smart card prompt
-  const smartCardPrompt = new Container([
+  // Search prompt
+  const searchPrompt = new Container([
     new Container([
-      new Text(getIcon('calendar-fill'), {
+      new Text(getIcon('search-line'), {
         type: 'div',
         class: 'register-package__card-icon'
       }),
-      new Text('Waiting for Smart Card', {
+      new Text('Search for Sender', {
         type: 'h2',
         class: 'register-package__prompt-title'
       }),
-      new Text('Please scan your smart card to continue', {
+      new Text('Type a name or email to find pending packages', {
         type: 'p',
         class: 'register-package__prompt-subtitle'
       }),
-      smartCardInputContainer,
-      new Button('Simulate Card Scan', {
-        onClickHandler: () => handleCardScan('SC001'),
-        class: 'register-package__scan-btn'
-      }),
+      new FieldLabel('Sender', senderComboBox, { class: 'register-package__sender-field' }),
     ], { class: 'register-package__prompt-content' }),
   ], { class: 'register-package__prompt' })
 
-  // Function to handle card scan
-  async function handleCardScan(smartCardId) {
-    // Lookup employee
-    const allEmployees = await siteApi.list(LIST_EMPLOYEES).getItems()
-    const employee = allEmployees.find(e => e.SmartCardID === smartCardId)
-
-    if (!employee) {
-      Toast.error('Employee not found')
-      const input = document.querySelector('.register-package__smart-card-input')
-      if (input) { input.value = ''; input.focus() }
-      return
-    }
-
-    // Get "created" packages for this employee (sender or recipient)
+  // Function to handle sender selection
+  async function handleSenderSelect(email, label) {
     const allPackages = await siteApi.list(LIST_PACKAGES).getItems()
     pendingPackages = allPackages.filter(pkg =>
-      pkg.Status === 'created' && pkg.Sender === employee.Email
+      pkg.Status === 'created' && pkg.Sender === email
     )
 
-    smartCardScanned = true
-    Toast.success(`Found ${pendingPackages.length} pending package(s) for ${employee.Title}`)
+    const name = label.split(' (')[0]
+    senderSelected = true
+    Toast.success(`Found ${pendingPackages.length} pending package(s) for ${name}`)
     updateView()
   }
 
   // Create table rows using SPARC components
   function createTableRows() {
     return pendingPackages.map(pkg => {
+      const statusCell = new Container([], { class: 'register-package__table-cell' })
+      statusCell.children = `<input type="text" value="${pkg.Status}" disabled class="register-package__status-input">`
+
       return new Container([
         new Text(pkg.Title, { type: 'span', class: 'register-package__table-cell' }),
         new Text(pkg.Recipient, { type: 'span', class: 'register-package__table-cell' }),
+        statusCell,
         new Container([
           new Button('Print Label', {
             onClickHandler: () => handlePrintLabel(pkg),
@@ -139,10 +120,8 @@ export default defineRoute(async (config) => {
 
   // Function to update the view
   function updateView() {
-    if (!smartCardScanned) {
-      // Show smart card prompt
-      tableContainer.children = [smartCardPrompt]
-      attachSmartCardListener()
+    if (!senderSelected) {
+      tableContainer.children = [searchPrompt]
     } else if (pendingPackages.length === 0) {
       tableContainer.children = [
         new Container([
@@ -150,13 +129,13 @@ export default defineRoute(async (config) => {
             type: 'h2',
             class: 'register-package__empty-title'
           }),
-          new Text('This user has no packages with "created" status.', {
+          new Text('This sender has no packages with "created" status.', {
             type: 'p',
             class: 'register-package__empty-message'
           }),
-          new Button('Scan Another Card', {
+          new Button('Search Again', {
             onClickHandler: () => {
-              smartCardScanned = false
+              senderSelected = false
               pendingPackages = []
               updateView()
             },
@@ -169,6 +148,7 @@ export default defineRoute(async (config) => {
       const tableHeader = new Container([
         new Text('Package ID', { type: 'span', class: 'register-package__table-header' }),
         new Text('Recipient', { type: 'span', class: 'register-package__table-header' }),
+        new Text('Status', { type: 'span', class: 'register-package__table-header' }),
         new Text('Action', { type: 'span', class: 'register-package__table-header' }),
       ], { class: 'register-package__table-head' })
 

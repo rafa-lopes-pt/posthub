@@ -36,8 +36,6 @@ export default defineRoute(async (config) => {
     TrackingNumber: pkg.Title,
     Sender: pkg.Sender,
     Recipient: pkg.Recipient,
-    Status: pkg.Status,
-    CurrentLocation: pkg.CurrentLocation,
     DestinationLocation: pkg.DestinationLocation,
     PackageDetails: pkg.PackageDetails
   }
@@ -65,7 +63,7 @@ export default defineRoute(async (config) => {
         height: 256,
         colorDark: '#000000',
         colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
+        correctLevel: QRCode.CorrectLevel.L
       })
     }
 
