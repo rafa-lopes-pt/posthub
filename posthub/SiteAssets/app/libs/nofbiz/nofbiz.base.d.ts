@@ -61,6 +61,7 @@ declare class ComboBox extends FormControl<ComboBoxOptionProps | ComboBoxOptionP
     private _invalidateFuseCache;
     private _defaultFilteringFunction;
     private _disableOnEmptyDataset;
+    private _syncDatasetFromField;
     private _trackTimeout;
     private _clearAllTimeouts;
     private _createSearchBar;
@@ -103,18 +104,19 @@ declare class ComboBox extends FormControl<ComboBoxOptionProps | ComboBoxOptionP
 }
 
 type FormFieldType = string | number | boolean | ComboBoxOptionProps | ComboBoxOptionProps[];
+type Unsubscribe = () => void;
 interface FormFieldProps<T extends FormFieldType> {
     value: T;
     validatorCallback?: (v: T) => boolean;
-    onChangeHandler?: (v: T) => void;
 }
 declare class FormField<T extends FormFieldType> {
     private _value;
     private _inputSelector?;
     private _validatorCallback?;
-    private _onChangeHandler?;
+    private _subscribers;
     private _isValid;
     private _wasTouched;
+    private _isDisposed;
     constructor(props?: FormFieldProps<T>);
     [Symbol.toStringTag](): string;
     [Symbol.toPrimitive](): string | T;
@@ -127,6 +129,10 @@ declare class FormField<T extends FormFieldType> {
     get wasTouched(): boolean;
     get isValid(): boolean;
     get hasValidation(): boolean;
+    get isDisposed(): boolean;
+    subscribe(callback: (v: T) => void): Unsubscribe;
+    private _notify;
+    dispose(): void;
 }
 
 /**
@@ -746,6 +752,19 @@ declare class PeoplePicker extends ComboBox {
     private _executeSearch;
     protected _onSearchEventListeners(): void;
     remove(): void;
+    /**
+     * Searches Active Directory for the given identifier and, if a unique match
+     * is found, selects it in the picker and updates the bound FormField.
+     *
+     * Use this to pre-populate PeoplePickers with stored user identifiers
+     * (emails, employee IDs, login names) from SharePoint list items while
+     * validating them against AD.
+     *
+     * @param identifier - Email, claims login, display name, or employee ID.
+     * @returns The matched {@link PeopleSearchResult} on success, or `null` if
+     *          the identifier could not be resolved to a single AD entry.
+     */
+    resolveUser(identifier: string): Promise<PeopleSearchResult | null>;
     /** Raw PeopleSearchResult array from the last completed search. */
     get searchResults(): PeopleSearchResult[];
     /** Full PeopleSearchResult for the currently selected option, or undefined. */
@@ -2353,4 +2372,4 @@ declare global {
 }
 
 export { AccordionGroup, AccordionItem, Button, Card, CheckBox, ComboBox, Container, CurrentUser, DateInput, Dialog, ErrorBoundary, FieldLabel, FormControl, FormField, FormSchema, Fragment, HTMDElement, Image, LinkButton, List, Loader, Modal, NavigationEvent, NumberInput, PeoplePicker, Router, SimpleElapsedTimeBenchmark, SiteApi, StyleResource, SystemError, TabGroup, Text, TextInput, Toast, View, ViewSwitcher, copyToClipboard, defineRoute, enforceStrictObject, generateRuntimeUID, generateUUIDv4, getFullUserDetails, getIcon, getUserProfile, pageReset, refreshRequestDigest, resolvePath, searchUsers, spDELETE, spGET, spMERGE, spPOST };
-export type { AccordionGroupProps, AccordionItemProps, ButtonProps, CAMLCondition, CAMLOperator, CAMLQueryObject, CAMLQueryResponse, CAMLValueOperator, CardProps, CardVariants, ChildrenOptions, ComboBoxDataset, ComboBoxOptionProps, ComboBoxProps, ContainerProps, ContainerTags, CreateFieldOptions, CreateListOptions, DATE_FORMATS, DateInputProps, DialogProps, DialogVariants, ErrorBoundaryProps, ErrorOptions, FieldLabelPosition, FieldLabelProps, FormControlProps, FormFieldProps, FormFieldType, FragmentProps, FullUserDetails, GetItemsOptions, GroupHierarchyEntry, HTMDElementInterface, HTMDElementProps, HTMDNode, HTMDSingleNode, ImageProps, InitializeOptions, LinkButtonProps, ListApiOptions, ListProps, LoaderProps, ModalProps, NavigationOptions, NumberInputProps, PeoplePickerProps, PeopleSearchOptions, PeopleSearchResult, PeopleSearchResultData, ProfileProperty, RouteConfig, RouteOptions, RoutePaths, RouterProps, RuntimeEventListenerOptions, RuntimeEventOptions, SPCollectionResponse, SPField, SPGroup, SPList, SPRequestOptions, SPUser, SPWeb, StyleResourceOptions, TabConfig, TabGroupProps, TextInputProps, TextProps, ToastLoadingController, ToastOptions, ToastPromiseMessages, ToastType, UserProfile, UserProfilePayload, ViewProps, ViewSwitcherProps, pageResetOptions };
+export type { AccordionGroupProps, AccordionItemProps, ButtonProps, CAMLCondition, CAMLOperator, CAMLQueryObject, CAMLQueryResponse, CAMLValueOperator, CardProps, CardVariants, ChildrenOptions, ComboBoxDataset, ComboBoxOptionProps, ComboBoxProps, ContainerProps, ContainerTags, CreateFieldOptions, CreateListOptions, DATE_FORMATS, DateInputProps, DialogProps, DialogVariants, ErrorBoundaryProps, ErrorOptions, FieldLabelPosition, FieldLabelProps, FormControlProps, FormFieldProps, FormFieldType, FragmentProps, FullUserDetails, GetItemsOptions, GroupHierarchyEntry, HTMDElementInterface, HTMDElementProps, HTMDNode, HTMDSingleNode, ImageProps, InitializeOptions, LinkButtonProps, ListApiOptions, ListProps, LoaderProps, ModalProps, NavigationOptions, NumberInputProps, PeoplePickerProps, PeopleSearchOptions, PeopleSearchResult, PeopleSearchResultData, ProfileProperty, RouteConfig, RouteOptions, RoutePaths, RouterProps, RuntimeEventListenerOptions, RuntimeEventOptions, SPCollectionResponse, SPField, SPGroup, SPList, SPRequestOptions, SPUser, SPWeb, StyleResourceOptions, TabConfig, TabGroupProps, TextInputProps, TextProps, ToastLoadingController, ToastOptions, ToastPromiseMessages, ToastType, Unsubscribe, UserProfile, UserProfilePayload, ViewProps, ViewSwitcherProps, pageResetOptions };

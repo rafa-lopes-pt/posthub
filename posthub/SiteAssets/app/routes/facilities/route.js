@@ -9,7 +9,7 @@ import {
 import { createNavbar } from '../../components/navbar.js'
 
 export default defineRoute((config) => {
-  config.setRouteTitle('PostHub - Facilities')
+  config.setRouteTitle('Facilities')
 
   // Navbar component
   const navbar = createNavbar()

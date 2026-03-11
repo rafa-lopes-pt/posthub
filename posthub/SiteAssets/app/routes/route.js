@@ -8,7 +8,7 @@ import {
 } from '../libs/nofbiz/nofbiz.base.js'
 
 export default defineRoute((config) => {
-  config.setRouteTitle('PostHub - Home')
+  config.setRouteTitle('Home')
 
   // Image paths - update these when real assets are provided
   const BACKGROUND_IMAGE_URL = '/SiteAssets/app/images/home-background.jpg'

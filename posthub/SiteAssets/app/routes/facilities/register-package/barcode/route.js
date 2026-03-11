@@ -11,7 +11,7 @@ import {
 import { createNavbar } from '../../../../components/navbar.js'
 
 export default defineRoute(async (config) => {
-  config.setRouteTitle('PostHub - Package Label')
+  config.setRouteTitle('Package Label')
 
   // Read package data from sessionStorage
   const storedData = sessionStorage.getItem('posthub_label_package')

@@ -15,7 +15,7 @@ import { createNavbar } from '../../components/navbar.js'
 import { LIST_PACKAGES, LIST_EMPLOYEES } from '../../utils/constants.js'
 
 export default defineRoute(async (config) => {
-  config.setRouteTitle('PostHub - My Mail')
+  config.setRouteTitle('My Mail')
 
   const siteApi = new SiteApi()
   const user = new CurrentUser()

@@ -9,15 +9,15 @@ import {
   Router,
   SiteApi,
   FormField,
-  ComboBox,
+  PeoplePicker,
   FieldLabel,
 } from '../../../libs/nofbiz/nofbiz.base.js'
 
 import { createNavbar } from '../../../components/navbar.js'
-import { LIST_EMPLOYEES, LIST_PACKAGES } from '../../../utils/constants.js'
+import { LIST_PACKAGES } from '../../../utils/constants.js'
 
 export default defineRoute(async (config) => {
-  config.setRouteTitle('PostHub - Register Package')
+  config.setRouteTitle('Register Package')
 
   const siteApi = new SiteApi()
 
@@ -25,20 +25,15 @@ export default defineRoute(async (config) => {
   let senderSelected = false
   let pendingPackages = []
 
-  // Load employees for ComboBox dataset
-  const allEmployees = await siteApi.list(LIST_EMPLOYEES).getItems()
-  const employeeOptions = allEmployees.map(e => ({
-    label: `${e.Title} (${e.Email})`,
-    value: e.Email,
-  }))
-
-  // Sender ComboBox
+  // Sender PeoplePicker (searches Active Directory)
   const senderField = new FormField({ value: { value: '', label: '' } })
-  const senderComboBox = new ComboBox(senderField, employeeOptions, {
+  const senderPicker = new PeoplePicker(senderField, {
     placeholder: 'Search by name or email...',
-    onSelectHandler: (selection) => {
-      if (selection && selection.value) {
-        handleSenderSelect(selection.value, selection.label)
+    onSelectHandler: () => {
+      const result = senderPicker.selectedResult
+      const email = result?.EntityData?.Email || result?.Description || ''
+      if (email) {
+        handleSenderSelect(email, result?.DisplayText || email)
       }
     },
   })
@@ -81,20 +76,23 @@ export default defineRoute(async (config) => {
         type: 'p',
         class: 'register-package__prompt-subtitle'
       }),
-      new FieldLabel('Sender', senderComboBox, { class: 'register-package__sender-field' }),
+      new FieldLabel('Sender', senderPicker, { class: 'register-package__sender-field' }),
     ], { class: 'register-package__prompt-content' }),
   ], { class: 'register-package__prompt' })
 
   // Function to handle sender selection
-  async function handleSenderSelect(email, label) {
-    const allPackages = await siteApi.list(LIST_PACKAGES).getItems()
-    pendingPackages = allPackages.filter(pkg =>
-      pkg.Status === 'created' && pkg.Sender === email
-    )
-
-    const name = label.split(' (')[0]
+  async function handleSenderSelect(email, displayName) {
+    const query = `
+      <Where>
+        <And>
+          <Eq><FieldRef Name='Sender'/><Value Type='Text'>${email}</Value></Eq>
+          <Eq><FieldRef Name='Status'/><Value Type='Text'>created</Value></Eq>
+        </And>
+      </Where>
+    `
+    pendingPackages = await siteApi.list(LIST_PACKAGES).getItems({ query })
     senderSelected = true
-    Toast.success(`Found ${pendingPackages.length} pending package(s) for ${name}`)
+    Toast.success(`Found ${pendingPackages.length} pending package(s) for ${displayName}`)
     updateView()
   }
 

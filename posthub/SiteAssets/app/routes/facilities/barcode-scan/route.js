@@ -16,7 +16,7 @@ import { createNavbar } from '../../../components/navbar.js'
 import { LIST_PACKAGES, LIST_LOCATIONS, LIST_EMPLOYEES, PACKAGE_STATUSES } from '../../../utils/constants.js'
 
 export default defineRoute(async (config) => {
-  config.setRouteTitle('PostHub - Barcode Scanner')
+  config.setRouteTitle('Barcode Scanner')
 
   const siteApi = new SiteApi()
   const user = new CurrentUser()
